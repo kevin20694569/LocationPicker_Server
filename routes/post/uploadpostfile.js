@@ -5,6 +5,7 @@ const multer = require("multer");
 const restaurantstable = require("../../util/mysql/restauranttable");
 const shortid = require("short-uuid");
 const posttable = require("../../util/mysql/posttable");
+const mime = require('mime');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -13,16 +14,12 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     const shortUUID = shortid();
     const uuid = shortUUID.new();
+    const mimeType = mime.lookup(file.mimetype);
     let ext = "";
-    switch (file.mimetype) {
-      case "image/jpeg":
-        ext = ".jpg";
-        break;
-      case "image/png":
-        ext = ".png";
-        break;
-      case "video/":
-        ext = ".mp4";
+    if (mimeType.startsWith("image/")) {
+      ext = '.jpg'
+    } else if (mimeType.startsWith('video/')) {
+      ext = '.mp4'
     }
     cb(null, uuid + ext);
   },
@@ -64,6 +61,7 @@ router.post("/", upload.array(`media`, 5),findRestaurantIDmiddleware, async (req
       };
       media_data.push(object);
     });
+    console.log(media_data)
 
     let [header, fields] = await posttable.insertNewPost(
       req.post_content,
