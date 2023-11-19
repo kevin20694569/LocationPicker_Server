@@ -23,7 +23,7 @@ class Mongodb_postsCollectionService {
 
       return result;
     } catch (error) {
-      throw new Error("插入失敗");
+      throw new Error("新建貼文失敗");
     }
   }
 
