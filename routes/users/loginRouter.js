@@ -1,16 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const connection = require('../../util/mysql/mysqldatabase')
-const userstable = require('../../util/mysql/userstable')
+const mysqlUserTableService = require('../../util/mysql/usersTable');
+const userTableService = new mysqlUserTableService()
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const key = "LocationPicker"
 
 router.post('/', async (req, res, next) => {
   const { email, password } = req.body
-  let conn = await connection.getConnection()
   try {
-    let [users, fileds] = await userstable.selectuserfromemail(email)
+    let [users, fileds] = await userTableService.selectuserfromemail(email)
     if (users.length > 0 && await bcrypt.compare(password, users[0].user_password)) {
       const token = jwt.sign({
         email,

@@ -1,81 +1,106 @@
-const mysql = require("mysql2");
-const connection = require("./mysqldatabase");
+const httpIP = require('../constant').ServerIP
+const mysqlServer = require("./mysqlDBPool");
 
-async function insertuser(username, url, email, hashPassword) {
-  var conn = await connection.getConnection();
-  try {
-    let query = `INSERT INTO users (user_name, user_imageurl, user_email, user_password) VALUES (?, ?, ?, ?)`;
-    let params = [username, url, email, hashPassword];
-    let [header, _] = await conn.query(query, params);
-    conn.release();
-    return [header, _];
-  } catch (error) {
-    conn.release();
-    throw error; // 抛出数据库操作相关的错误
-  }
-}
-
-async function selectuserfromemail(email) {
-  var conn = await connection.getConnection();
-  try {
-    let query = `SELECT user_email FROM users WHERE user_email = ?`;
-    let params = [email];
-    let [results, fields] = await conn.query(query, params);
-    conn.release();
-
-    return [results, fields];
-  } catch (error) {
-    conn.release();
-    throw error; // 抛出错误
-  }
-}
-
-async function selectuserfromemail(email) {
-  try {
-    var conn = await connection.getConnection();
-    let query = `SELECT * FROM users Where user_email = ?`;
-    let params = [email];
-    let [results, fields] = await conn.query(query, params);
-    conn.release();
-    return [results, fields];
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function getuserProfile(userid, date) {
+class mysqlUsersTableService {
+  async release() {
     try {
-      var conn = await connection.getConnection();
-      let postquery = `select posts.post_id as post_ID, posts.created_at,
-      posts.media_data_json->'$[0].url' as mediaurl from users
-      left join posts on posts.user_id = users.user_id AND posts.created_at < ?
-       where users.user_id = ?
-       order by posts.created_at desc;`;
-      var postparams = [date, userid];
-      let [postresults, postfileds] = await conn.query(postquery, postparams);
-      let userquery =
-        "select user_name, user_imageurl from users where user_id = ?";
-      if (postresults[0].post_ID == null) {
-        postresults = null;
-      }
-      let userparams = [userid];
-      let [userresults, userfileds] = await conn.query(userquery, userparams);
-      conn.release();
-      let { user_name, user_imageurl } = userresults[0];
-      let json = {
-        username: user_name,
-        userimageurl: user_imageurl,
-        postresults: postresults,
-      };
-      return json;
+      await this.connection.release();
     } catch (error) {
-      conn.release();
-      throw new Error();
+      console.log(error.message);
+      throw new Error("關閉mysql 失敗");
+    }
+  }
+  async getConnection() {
+    try {
+      this.connection = await mysqlServer.getConnection();
+    } catch (error) {
+      console.log(error.message);
+      throw new Error("mysql伺服器連接失敗");
     }
   }
 
-module.exports = {
-  insertuser,
-  selectuserfromemail,
-  getuserProfile
-};
+  async insertuser(username, imageid, email, hashPassword) {
+
+    try {
+      await this.getConnection()
+      let query = `INSERT INTO users (user_name, user_imageid, user_email, user_password) VALUES (?, ?, ?, ?)`;
+      let params = [username, imageid, email, hashPassword];
+      let [header, fields] = await this.connection.query(query, params);
+      return [header, fields];
+    } catch (error) {
+
+      throw error;
+    } finally {
+      await this.release()
+    }
+  }
+  
+  async selectuserfromemail(email) {
+   
+    try {
+      await this.getConnection()
+      let query = `SELECT user_email FROM users WHERE user_email = ?`;
+      let params = [email];
+      let [results, fields] = await this.connection.query(query, params);
+  
+      return [results, fields];
+    } catch (error) {
+      throw error; // 抛出错误
+    } finally {
+      await this.release()
+    }
+  }
+  
+  async selectuserfromemail(email) {
+    try {
+      await this.getConnection()
+      let query = `SELECT * FROM users Where user_email = ?`;
+      let params = [email];
+      let [results, fields] = await this.connection.query(query, params);
+      return [results, fields];
+    } catch (error) {
+      throw error;
+    } finally {
+      await this.release()
+    }
+  }
+  
+  async getUserPostsProfileByID(userid) {
+      try {
+        await this.getConnection()
+        let userquery =
+          "select user_id, user_name, user_imageid, user_email from users where user_id = ?";
+        let userparams = [userid];
+        
+        let [userresults, userfileds] = await this.connection.query(userquery, userparams);
+        let user = userresults[0]
+        user["user_imageurl"] = httpIP + "userimage/" + `${user.user_imageid}`
+        return user
+      } catch (error) {
+        throw error;
+      } finally {
+        await this.release()
+      }
+    }
+  
+  async getUserByID(user_id) {
+    try {
+      await this.getConnection()
+      let array = user_id.join(',');
+      let query = `select user_id, user_name, user_imageid from users where user_id in (?);`;
+      var params = [array];
+      let [results, fileds] = await this.connection.query(query, params);
+      if ( results.length > 0 ) {
+        return results
+      }
+    } catch (error) {
+      throw error
+    } finally {
+      await this.release()
+    }
+  }
+}
+
+
+
+module.exports = mysqlUsersTableService

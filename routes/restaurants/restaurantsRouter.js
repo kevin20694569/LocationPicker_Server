@@ -1,19 +1,19 @@
 const express = require("express");
 const router = express.Router();
-const connection = require("../../util/mysql/mysqldatabase");
-const googlemapAPi = require("../../util/googlemapapi/googlemapsearch");
-const restauranttable = require("../../util/mysql/restauranttable");
+const mysqlRestaurantsTableService = require('../../util/mysql/restaurantsTabel');
+const restaurantTableService = new mysqlRestaurantsTableService()
 
 router.get("/:id", async (req, res, next) => {
   try {
     let id = req.params.id;
-    let result = await restauranttable.getrestaurant(id)
+    let {latitude, longitude} = req.query
+    let result = await restaurantTableService.getrestaurant(id, latitude, longitude)
     if (result == null || result == undefined) {
       res.send([]);
       console.log("找不到餐廳");
       res.status(404);
     } else {
-      res.send(result);
+      res.json(result);
       res.status(200);
     }
   } catch (error) {

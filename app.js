@@ -9,6 +9,7 @@ var app = express();
 var apiRouter = require('./routes/api')
 var socketRouter = require('./socket.io/main')
 
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
