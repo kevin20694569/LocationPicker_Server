@@ -2,71 +2,107 @@
 
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Socket.IO Test</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
-
-    input[type="text"] {
-      width: 200px;
-      padding: 8px;
-      margin-right: 10px;
-    }
-
-    button {
-      padding: 10px;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <h1>Socket.IO Test</h1>
-
-  <div>
-    <input type="text" id="messageInput" placeholder="Enter a message">
-    <button onclick="sendMessage()">Send Message to Server</button>
-  </div>
-
-  <div id="messages"></div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io(); // Replace with your Socket.IO server URL
-    const messagesContainer = document.getElementById('messages');
-    const messageInput = document.getElementById('messageInput');
-
-    // Event handler for connection established
-    socket.on('connect', () => {
-      logMessage('Connected to Socket.IO server');
-    });
-
-    // Event handler for receiving a message from the server
-    socket.on('message', (data) => {
-      logMessage(`Message from server: ${data}`);
-    });
-
-    // Function to send a message to the server
-    function sendMessage() {
-      const message = messageInput.value;
-      if (message.trim() !== '') {
-        socket.emit('chat message', message);
-        logMessage(`You: ${message}`);
-        messageInput.value = '';
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Socket.IO Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
       }
-    }
 
-    // Helper function to log messages to the messagesContainer
-    function logMessage(message) {
-      const messageElement = document.createElement('div');
-      messageElement.textContent = message;
-      messagesContainer.appendChild(messageElement);
-    }
-  </script>
-</body>
+      input[type="text"] {
+        width: 200px;
+        padding: 8px;
+        margin-right: 10px;
+      }
+
+      button {
+        padding: 10px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Socket.IO Test</h1>
+
+    <div>
+      <input type="text" id="messageInput" placeholder="Enter a message" />
+      <button onclick="sendMessage()">Send Message to Server</button>
+    </div>
+
+    <div id="messages"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+      const socket = io(); // Replace with your Socket.IO server URL
+
+      const messagesContainer = document.getElementById("messages");
+      const messageInput = document.getElementById("messageInput");
+      let chatroomsArray;
+      let roomid;
+      let senderid;
+      // Event handler for connection established
+      socket.on("connect", async () => {
+        logMessage("Connected to Socket.IO server");
+        chatroomsArray = await getChatrooms();
+        chatroomsArray.forEach((chatRoomID) => {
+          socket.emit("joinRoom", chatRoomID);
+        });
+
+        roomid = chatroomsArray[0];
+        senderid = 1;
+      });
+
+      socket.on("message", (data) => {
+        console.log(`Received message from ${socket.id}: ${data}`);
+        roomid = data.roomid;
+        const message = data.message;
+        const senderid = data.senderid;
+        console.log(data);
+        logMessage(message);
+      });
+
+      // Function to send a message to the server
+      function sendMessage() {
+        const message = messageInput.value;
+
+        if (message.trim() !== "") {
+          socket.emit("message", {
+            roomid: roomid,
+            senderid: senderid,
+            message: message,
+          });
+          messageInput.value = "";
+        }
+      }
+      async function getChatrooms() {
+        try {
+          const date = new Date("2023-11-20T17:55:46.732Z").toISOString()
+          const response = await fetch("http://10.18.83.80:80/chatrooms/1");
+          const messageres = await fetch(
+            `http://10.18.83.80:80/chatrooms/1_2/message?date=${date}`
+          );
+          const jsonbody = await messageres.json();
+          const jsonData = await response.json();
+          jsonbody.forEach((element) => {
+            logMessage(element.message)
+          });
+          return jsonData.chatRoomIds;
+        } catch (error) {
+          logMessage(error);
+        }
+      }
+
+      // Helper function to log messages to the messagesContainer
+      function logMessage(message) {
+        const messageElement = document.createElement("div");
+        messageElement.textContent = message;
+        messagesContainer.appendChild(messageElement);
+      }
+    </script>
+  </body>
 </html>

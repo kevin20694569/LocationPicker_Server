@@ -3,12 +3,13 @@ const mysqlServer = require("./mysqlDBPool");
 const googleMapAPIService = require("../googlemap/googleMapAPIService");
 const googleMapService = new googleMapAPIService()
 const constant = require("../constant");
+const { ServerIP } = constant
 
 
 class mysqlRestaurantsTableService {
   async release() {
     try {
-      await this.connection.release();
+      this.connection.release();
     } catch (error) {
       console.log(error.message);
       throw new Error("關閉mysql 失敗");
@@ -25,7 +26,7 @@ class mysqlRestaurantsTableService {
 
   async findrestaurantIDByMySQL(restaurant_ID) {
     try {
-      await this.createConnection();
+      await this.getConnection();
       let query = `select * from restaurants where restaurant_id = ?;`;
       let params = [restaurant_ID];
       let [results, fileds] = await this.connection.query(query, params);
@@ -39,7 +40,7 @@ class mysqlRestaurantsTableService {
         }
         let { photo_reference } = photos[0];
         let imageID = await googleMapService.downloadPhoto(photo_reference, place_id);
-        let [results, fileds] = await createnewrestaurant(
+        let [results, fileds] = await this.createnewrestaurant(
           place_id,
           name,
           formatted_address,
@@ -57,6 +58,7 @@ class mysqlRestaurantsTableService {
     } finally {
       await this.release();
     }
+
   }
 
   async getrestaurant(restaurant_id, lat, lng) {
@@ -72,7 +74,7 @@ class mysqlRestaurantsTableService {
       let restaurant = restaurantresults[0];
       let id = restaurant.restaurant_id;
       restaurant["restaurant_imageurl"] =
-        constant.ServerIP +
+      ServerIP +
         "restaurantimage/" +
         restaurant.restaurant_id +
         ".jpg";
@@ -98,7 +100,7 @@ class mysqlRestaurantsTableService {
     } catch (error) {
       throw error;
     } finally {
-      this.release();
+      await this.release();
     }
   }
 

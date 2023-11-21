@@ -96,7 +96,7 @@ const messageSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  created_at: {
+  created_time: {
     type: Date,
     require: true,
     default: new Date(),
@@ -108,7 +108,7 @@ const userSchema = new mongoose.Schema({
     type : Number,
     require : true,
   },
-  chatroomIds : [
+  chatRoomIds : [
     {
       type : String,
     }
@@ -117,7 +117,7 @@ const userSchema = new mongoose.Schema({
 
 const chatroomSchema = new mongoose.Schema({
   room_id : {
-    type : Number,
+    type : String,
     require : true
   },
   room_users : [
@@ -127,10 +127,10 @@ const chatroomSchema = new mongoose.Schema({
   ]
 })
 
-var Post = locationpickermongoDB.model("Post", PostSchema);
-var message = locationpickermongoDB.model("message", messageSchema);
-var user = locationpickermongoDB.model("user", userSchema);
-var chatroom = locationpickermongoDB.model("chatroom", chatroomSchema);
+var Post = locationpickermongoDB.model("posts", PostSchema);
+var message = locationpickermongoDB.model("messages", messageSchema);
+var user = locationpickermongoDB.model("users", userSchema);
+var chatroom = locationpickermongoDB.model("chatRooms", chatroomSchema);
 
 module.exports = {
   Post,

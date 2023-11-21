@@ -82,6 +82,7 @@ class mysqlUsersTableService {
         await this.release()
       }
     }
+
   
   async getUserByID(user_id) {
     try {

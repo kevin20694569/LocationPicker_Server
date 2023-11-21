@@ -5,6 +5,9 @@ const multer = require("multer");
 const path = require("path");
 const mysqlUserTableService = require('../../util/mysql/usersTable.js');
 const userTableService = new mysqlUserTableService()
+
+const Mongodb_usersCollectionService = require('../../util/mongoose/usersCollection.js')
+const usersCollectionService = new Mongodb_usersCollectionService()
 const neo4jdb = require("../../util/neo4j/friendsDBNeo4j.js");
 const Neo4jService = new neo4jdb.Neo4j_FriendShipsService();
 
@@ -47,9 +50,11 @@ router.post("/", upload.single("userimage"), async (req, res, next) => {
       email,
       hashPassword
     );
+
     let user_id = header["insertId"];
-    let users = await Neo4jService.createUser(user_id, username);
-    let json = neo4jdb.transFormToJSONNeo4jResults(users, 'user');
+    let mongodbUsers = await usersCollectionService.createUser(user_id)
+    let neo4jUsers = await Neo4jService.createUser(user_id, username);
+    let json = neo4jdb.transFormToJSONNeo4jResults(neo4jUsers, 'user');
     console.log(json[0]);
     res.send("註冊成功");
   } catch (error) {

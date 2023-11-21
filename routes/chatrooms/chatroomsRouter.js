@@ -1,21 +1,35 @@
 const express = require("express");
 const router = express.Router();
-const friendsDBNeo4j = require("../../util/neo4j/friendsDBNeo4j.js");
-const FriendShipsService = new friendsDBNeo4j.Neo4j_FriendShipsService();
 const Mongodb_chatRoomsCollectionService = require("../../util/mongoose/chatRoomsCollection.js");
 const chatRoomsCollectionService = new Mongodb_chatRoomsCollectionService();
 const Mongodb_usersCollectionService = require("../../util/mongoose/usersCollection.js");
-const usersCollectionService = new Mongodb_usersCollectionService();
-const Mongodb_messagesCollection = require("../../util/mongoose/messagesCollection.js")
-const messagesCollectionService = new Mongodb_messagesCollection()
+const MySQL_usersTable = require('../../util/mysql/usersTable.js')
+const usersTable = new MySQL_usersTable()
+const { ServerIP } = require('../../util/constant.js')
 
-router.get('/preview', async (req, res) => {
+const messageRouter = require('./messages/messagesRouter.js');
+
+
+router.get('/preview/:id', async (req, res) => {
     try {
-        let { date } = req.query;
-        let request_user_id = req.body;
-        //getPreview 用requestuserid, date用mongoose關聯查詢 先查user有的聊天室 再用這些聊天室拿到所有聊天室的最後一則訊息 再排序回傳
-        //user mongodb表 還要有imageurl, name 
-        let results = await chatRoomsCollectionService.getPreview(request_user_id, date)
+      let request_user_id = req.params.id
+      request_user_id = parseInt(request_user_id)
+      let { date } = req.query;
+        let results = await chatRoomsCollectionService.getPreviewByUserId(request_user_id, date)
+        let user_ids = results.map( ( (result) => {
+          let array = result.room_id.split('_')
+          return parseInt(array[1])
+        }) )
+        let users = await usersTable.getUserByID(user_ids)
+        results.map( (result, index) => {
+          result['room_imageid'] = ServerIP + "userimage/" + users[index].user_imageid
+          result['name'] =  users[index].user_name
+          if (result['senderId'] == request_user_id) {
+            result['isRead'] = true
+          }
+        })
+        res.json(results)
+        res.end()
       } catch (error) {
         res.status(404).send(error.message);
         console.log(error);
@@ -24,27 +38,25 @@ router.get('/preview', async (req, res) => {
       }
 })
 
-router.get("/:id", async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    let { date } = req.query;
-    let { from_user_id, to_user_id } = req.body;
-    let user_ids = [from_user_id, to_user_id];
-    let room_id = await chatRoomsCollectionService.getRoomIdByUserIds(user_ids)
-    if (room_id) {
-      chatRoomsCollectionService;
-      let messages = await chatRoomsCollectionService.getRoomMessage(room_id, date);
-    res.json(messages);
-    } else {
-      room_id = `${to_user_id}_${from_user_id}`;
-      let room = await chatRoomsCollectionService.createRoom(room_id, user_ids);
-      let users = await usersCollectionService.insertRoomIdToUser(user_ids, room_id);
+    let request_user_id = req.params.id
+    request_user_id = parseInt(request_user_id)
+      let results = await chatRoomsCollectionService.getChatRoomsFromUserId(request_user_id)
+      let json = {
+        "user_id" : results.user_id,
+        "chatRoomIds" : results.chatRoomIds
+      }
+      res.json(json)
+      res.end()
+    } catch (error) {
+      res.status(404).send(error.message);
+      console.log(error);
+    } finally {
+      res.end();
     }
-  } catch (error) {
-    res.status(404).send(error.message);
-    console.log(error);
-  } finally {
-    res.end();
-  }
-});
+})
+
+router.use("/", messageRouter)
 
 module.exports = router;

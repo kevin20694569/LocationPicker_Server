@@ -102,7 +102,6 @@ class Mongodb_postsCollectionService {
       }
 
       const results = await this.Post.aggregate(match);
-      console.log(results);
 
       if (results.length > 0) {
         return results.map((result) => result.randomPost);

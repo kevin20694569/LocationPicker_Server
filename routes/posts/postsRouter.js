@@ -21,7 +21,6 @@ const storage = multer.diskStorage({
     } else if (mimeType.startsWith('video/')) {
       ext = '.mp4'
     }
-    console.log(uuid + ext)
     cb(null, uuid + ext);
   },
 });
@@ -102,13 +101,7 @@ async function findRestaurantIDmiddleware(req, res, next) {
       grade,
     } = json;
 
-    if (restaurant_name == undefined || restaurant_address == undefined) {
-      res.status(400);
-    }
-
-    let restaurant_id = await restaurantTableService.findrestaurantIDByMySQL(
-      restaurant_ID
-    );
+    let restaurant_id = await restaurantTableService.findrestaurantIDByMySQL( restaurant_ID );
 
     if (restaurant_id) {
       req.post_content = post_content;

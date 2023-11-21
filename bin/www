@@ -8,7 +8,8 @@ var app = require('../app');
 var debug = require('debug')('locationpicker-server:server');
 
 const redis = require('../util/redis/redis');
-const friendsDBNeo4j = require('../util/neo4j/friendsDBNeo4j')
+const SocketIOService = require('../util/socket.io/main')
+
 
 var http = require('http');
 //const { Server } = require('mysql2/typings/mysql/lib/Server');
@@ -24,7 +25,6 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
-const socketIO = require('socket.io')
 /**
  * Listen on provided port, on all network interfaces.
  */
@@ -32,31 +32,7 @@ const socketIO = require('socket.io')
 server.listen(port, '192.168.0.193')
 server.on('error', onError);
 server.on('listening', onListening);
-
-const FriendShipsService = new friendsDBNeo4j.Neo4j_FriendShipsService();
-
-const io = socketIO(server)
-io.on('connection', (socket) => {
-  console.log('有一個客戶端連接了');
-
-  // 在這裡可以註冊各種事件和處理程序
-  socket.on('private message', (msg, targetUserID) => {
-    // 檢查目標使用者是否存在並且是有效的 Socket ID
-    if (users[targetUserID] && io.sockets.sockets[targetUserID]) {
-      // 發送私人訊息給目標使用者
-      io.to(targetUserID).emit('private message', { message: msg, senderID: socket.id });
-    } else {
-      // 如果目標使用者不存在或是無效的 Socket ID，回傳錯誤訊息
-      socket.emit('private message', { error: '目標使用者不存在或是無效的 Socket ID' });
-    }
-  });
-
-  socket.on('disconnect', () => {
-      console.log('客戶端斷開連接');
-  });
-});
-
-
+const socketIOService = new SocketIOService(server)
 /**
  * Normalize a port into a number, string, or false.
  */
