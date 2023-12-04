@@ -1,5 +1,5 @@
-const GoogleMapAPIKey = 'ddd'
-const ServerIP = "ccc";
+const GoogleMapAPIKey = ''
+const ServerIP = "";
 module.exports = {
     GoogleMapAPIKey,
     ServerIP

@@ -1,4 +1,4 @@
-const httpIP = require('../constant').ServerIP
+const httpIP = require('../extension/constant').ServerIP
 const mysqlServer = require("./mysqlDBPool");
 
 class mysqlUsersTableService {
@@ -87,9 +87,8 @@ class mysqlUsersTableService {
   async getUserByID(user_id) {
     try {
       await this.getConnection()
-      let array = user_id.join(',');
       let query = `select user_id, user_name, user_imageid from users where user_id in (?);`;
-      var params = [array];
+      var params = [user_id];
       let [results, fileds] = await this.connection.query(query, params);
       if ( results.length > 0 ) {
         return results

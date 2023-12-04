@@ -1,7 +1,10 @@
 var express = require("express");
 var router = express.Router();
+const ServerIP = require('../../util/extension/constant.js').ServerIP
 const friendsDBNeo4j = require("../../util/neo4j/friendsDBNeo4j.js");
 const FriendShipsService = new friendsDBNeo4j.Neo4j_FriendShipsService();
+const mysql_usersTable = require("../../util/mysql/usersTable.js");
+const usersTable = new mysql_usersTable();
  
 router.get("/:id", async (req, res) => {
   try {
@@ -14,11 +17,18 @@ router.get("/:id", async (req, res) => {
     let request = friendsDBNeo4j.transFormToJSONNeo4jResults(results, "request");
     let from_user = friendsDBNeo4j.transFormToJSONNeo4jResults(results, "from_user");
     let json = [];
+    let ids = from_user.map((user) => {
+      return user['user_ID']
+    });
+    let users = await usersTable.getUserByID(ids)
+    console.log(users)
+
     for (const [index, element] of request.entries()) {
       delete from_user[index].from_user_ID;
       let object = {
         ...request[index],
         ...from_user[index],
+        "user_imageurl" :  ServerIP +  "userimage/" + users[index].user_imageid
       };
       json.push(object);
     }

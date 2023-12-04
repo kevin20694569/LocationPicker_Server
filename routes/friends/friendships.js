@@ -8,13 +8,14 @@ const FriendShipsService = new friendsDBNeo4j.Neo4j_FriendShipsService();
 
 router.post("/accept/:id", async (req, res) => {
   try {
-    let { user_id } = req.body;
-    let request_id = req.params.id;
+    let { accept_user_id } = req.body;
+    let friend_request_id = req.params.id;
     let results = await FriendShipsService.acceptToCreateFriendship(
-      user_id,
-      request_id
+      accept_user_id,
+      friend_request_id
     );
     let json = neo4jdb.transFormToJSONNeo4jResults(results, 'friendship')
+    res.status(200)
     res.json(json[0]);
   } catch (error) {
     res.status(404).send(error.message);

@@ -1,5 +1,5 @@
 const axios = require("axios");
-const { GoogleMapAPIKey } = require("../constant");
+const { GoogleMapAPIKey } = require("../extension/constant");
 const fs = require("fs");
 
 class GoogleMapAPIService {

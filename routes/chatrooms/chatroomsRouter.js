@@ -5,7 +5,7 @@ const chatRoomsCollectionService = new Mongodb_chatRoomsCollectionService();
 const Mongodb_usersCollectionService = require("../../util/mongoose/usersCollection.js");
 const MySQL_usersTable = require('../../util/mysql/usersTable.js')
 const usersTable = new MySQL_usersTable()
-const { ServerIP } = require('../../util/constant.js')
+const { ServerIP } = require('../../util/extension/constant.js')
 
 const messageRouter = require('./messages/messagesRouter.js');
 

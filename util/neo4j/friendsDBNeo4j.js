@@ -79,13 +79,13 @@ class Neo4j_FriendShipsService {
     }
   }
 
-  async acceptToCreateFriendship(to_user_id, friend_request_id) {
+  async acceptToCreateFriendship(accept_user_id, friend_request_id) {
     this.session = await this.createSession();
-    to_user_id = parseInt(to_user_id)
+    accept_user_id = parseInt(accept_user_id)
     friend_request_id = parseInt(friend_request_id)
     try {
       let query = `
-      MATCH (user2: User { user_ID : $to_user_id })
+      MATCH (user2: User { user_ID : $accept_user_id })
       OPTIONAL MATCH (user1:User)-[:SENT_FRIEND_REQUEST]->(request:FriendRequest)-[:TO_USER]->(user2)
       WITH user1, user2, request
       WHERE id(request) = $friend_request_id
@@ -96,7 +96,7 @@ class Neo4j_FriendShipsService {
       return friendship;
       `;
       let results = await this.session.run(query, {
-        to_user_id,
+        accept_user_id,
         friend_request_id,
       });
       if (results.records.length <= 0) {

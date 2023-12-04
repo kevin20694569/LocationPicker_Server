@@ -4,12 +4,13 @@ class Mongodb_messagesCollectionService {
   constructor() {
     this.message = message;
   }
-  async saveMessage(room_ID, sender_ID, message) {
+  async saveMessage(room_ID, sender_ID, message, created_time) {
     try {
       let messageModel = {
         room_id: room_ID,
         sender_id: sender_ID,
         message: message,
+        created_time : created_time
       };
       let result = await this.message.create(messageModel);
 
@@ -22,13 +23,16 @@ class Mongodb_messagesCollectionService {
 
   async getRoomMessage(room_id, date, limit) {
     try {
+      console.log(date)
       if (!date) {
         date = new Date();
+      } else {
+        date = new Date(date)
       }
       let results = await this.message
         .find({
           room_id: room_id,
-          created_time: { $lte: date },
+          created_time: { $lt: date },
         })
         .sort({ created_time: -1 })
         .limit(limit);

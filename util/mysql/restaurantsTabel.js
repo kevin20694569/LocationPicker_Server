@@ -2,7 +2,7 @@ const mysqlServer = require("./mysqlDBPool");
 
 const googleMapAPIService = require("../googlemap/googleMapAPIService");
 const googleMapService = new googleMapAPIService()
-const constant = require("../constant");
+const constant = require("../extension/constant");
 const { ServerIP } = constant
 
 
@@ -31,7 +31,7 @@ class mysqlRestaurantsTableService {
       let params = [restaurant_ID];
       let [results, fileds] = await this.connection.query(query, params);
       if (results.length > 0) {
-        return results[0].restaurant_id;
+        return results[0];
       } else {
         let { place_id, name, formatted_address, geometry, lat, lng, photos } =
           await restaurantsearchfromgoogleByID(restaurant_ID);
@@ -48,7 +48,12 @@ class mysqlRestaurantsTableService {
           lng
         );
         if (results.serverStatus == 2) {
-          return place_id;
+          let result = {
+            "restaurant_id" : place_id,
+            "restaurant_latitude" : lat,
+            "restaurant_longitude" : lng
+          }
+          return result;
         } else {
           throw new Error("新建餐廳失敗");
         }
@@ -103,6 +108,19 @@ class mysqlRestaurantsTableService {
       await this.release();
     }
   }
+  async getRestaurantsDetail(restaurant_Ids) {
+    try {
+      await this.getConnection();
+      let query = `Select * from restaurants Where restaurant_id in (?)`;
+      let params = [restaurant_Ids];
+      const [results, fileds] = await this.connection.query(query, params);
+      return [results, fileds];
+    } catch (error) {
+      throw error;
+    } finally {
+      await this.release();
+    }
+  }
 
   async getnearlocactionRestaurants( latitude, longitude, offset, lastrestaurantid, limit ) {
     try {
@@ -137,6 +155,7 @@ class mysqlRestaurantsTableService {
     }
   }
 }
+
 
 async function restaurantsearchfromgoogleByID(location_ID) {
   let result = await googleMapService.searchPlaceByID(location_ID);

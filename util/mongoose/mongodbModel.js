@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const constant = require("../constant");
+const constant = require("../extension/constant");
 const ServerIP = constant.ServerIP;
 const locationpickermongoDB = require("./mongodb");
 
@@ -38,6 +38,7 @@ let randomPostProjectOutput = {
   },
   user_id: "$randomPost.user_id",
   restaurant_id: "$randomPost.restaurant_id",
+  location : "$location",
   created_at: "$randomPost.created_at",
 };
 
@@ -72,6 +73,17 @@ const PostSchema = new mongoose.Schema({
     type: String,
     require: true,
   },
+  location: {
+    type: {
+      type: String,
+      enum: ["Point"],
+      required: true,
+    },
+    coordinates: {
+      type: [Number],
+      required: true,
+    },
+  },
   created_at: {
     type: Date,
     require: true,
@@ -98,8 +110,7 @@ const messageSchema = new mongoose.Schema({
   },
   created_time: {
     type: Date,
-    require: true,
-    default: new Date(),
+    require: true
   },
 });
 
@@ -126,17 +137,18 @@ const chatroomSchema = new mongoose.Schema({
     }
   ]
 })
-
 var Post = locationpickermongoDB.model("posts", PostSchema);
 var message = locationpickermongoDB.model("messages", messageSchema);
 var user = locationpickermongoDB.model("users", userSchema);
 var chatroom = locationpickermongoDB.model("chatRooms", chatroomSchema);
+
 
 module.exports = {
   Post,
   message,
   user,
   chatroom,
+  locationpickermongoDB,
   projectOutput,
   randomPostProjectOutput,
 };

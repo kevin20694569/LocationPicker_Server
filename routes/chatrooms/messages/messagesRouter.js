@@ -25,7 +25,7 @@ router.get("/:id/message", async (req, res) => {
     })
     let room = await chatRoomsCollectionService.getRoomByRoomId(room_id)
     if (room) {
-    let messages = await messagesCollectionService.getRoomMessage(room_id, date, 5);
+    let messages = await messagesCollectionService.getRoomMessage(room_id, date, 20);
 
     res.json(messages);
     } else {

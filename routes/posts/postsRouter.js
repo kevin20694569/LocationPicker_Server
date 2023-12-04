@@ -5,8 +5,10 @@ const mysqlRestaurantsTableService = require('../../util/mysql/restaurantsTabel.
 const restaurantTableService = new mysqlRestaurantsTableService()
 const shortid = require("short-uuid");
 const mime = require('mime');
-const Mongodb_postsCollectionService = require("../../util/mongoose/postsCollection.js")
+const Mongodb_postsCollectionService = require("../../util/mongoose/postsCollection.js");
+const { JsonWebTokenError } = require("jsonwebtoken");
 const postsCollectionService = new Mongodb_postsCollectionService()
+const friednsPostsRouter = require('./friendsPostsRouter.js')
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, './public/media/postmedia');
@@ -37,7 +39,7 @@ const upload = multer({
     }
   },
 });
-
+router.use("/friends", friednsPostsRouter)
 
 router.get("/:id", async (req, res, next) => {
   try {
@@ -50,6 +52,8 @@ router.get("/:id", async (req, res, next) => {
   }
   res.end();
 });
+
+
 
 router.post("/", upload.array(`media`, 5), findRestaurantIDmiddleware, async (req, res, next) => {
     try {
@@ -73,24 +77,33 @@ router.post("/", upload.array(`media`, 5), findRestaurantIDmiddleware, async (re
     if (media_data.length < 1) {
       throw new Error("沒有上傳影像 新建Post失敗");
     }
+
+    const location = {
+      type: "Point",
+      coordinates: req.location,
+    };
+
     let result = await postsCollectionService.insertPost(
       req.post_content,
       media_data,
       req.user_id,
+      location,
       req.restaurant_id
     );
-    res.status(200).send("插入成功")
+    res.status(200).json("上傳成功")
     } catch (error) {
       res.end(error.message)
       return
+    } finally {
+      res.end();
     }
-    res.end();
   }
 );
 
 async function findRestaurantIDmiddleware(req, res, next) {
   try {
     let json = JSON.parse(req.body.json);
+
     let {
       user_id,
       post_content,
@@ -101,7 +114,7 @@ async function findRestaurantIDmiddleware(req, res, next) {
       grade,
     } = json;
 
-    let restaurant_id = await restaurantTableService.findrestaurantIDByMySQL( restaurant_ID );
+    let { restaurant_id, restaurant_latitude, restaurant_longitude } = await restaurantTableService.findrestaurantIDByMySQL( restaurant_ID );
 
     if (restaurant_id) {
       req.post_content = post_content;
@@ -111,6 +124,7 @@ async function findRestaurantIDmiddleware(req, res, next) {
       req.restaurant_address = restaurant_address;
       req.user_id = user_id;
       req.restaurant_id = restaurant_id;
+      req.location =  [restaurant_longitude, restaurant_latitude ]
       next();
     } else {
       throw new Error("未預期的錯誤")
