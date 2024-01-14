@@ -16,13 +16,16 @@ const common_utils = new common_functionObject();
 router.get("/:id", async (req, res) => {
   try {
     let user_id = req.params.id;
+    let { longitude, latitude, date } = req.query
     let friends = await friendShipsService.searchFriendsByUserID(user_id);
     friends = friendsDBNeo4j.transFormToJSONNeo4jResults(friends, "friends");
     const frined_Ids = friends.map((friend) => {
       return friend.user_ID;
     });
     let posts = await postsCollectionService.getFriendsPostByCreatedTime(
-      frined_Ids
+      frined_Ids,
+      date,
+      longitude, latitude
     );
     const users_Ids = posts.map((post) => {
       return post.user_id;
@@ -32,7 +35,7 @@ router.get("/:id", async (req, res) => {
     });
     const [restaurants, fileds] =
       await restaurantTableService.getRestaurantsDetail(restaurants_Ids);
-    let users = await userTableService.getUserByID(users_Ids);
+    let users = await userTableService.getUserByIDs(users_Ids);
     let jsonData = common_utils.mergeJsonProperties(posts, users, restaurants);
     res.json(jsonData);
   } catch (error) {

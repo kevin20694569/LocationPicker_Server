@@ -17,11 +17,10 @@ router.get("/:id", async (req, res) => {
     let ids = friends.map((friend) => {
         return friend.user_ID;
       });
-    let users = await usersTable.getUserByID(ids);
-    console.log(users)
+    let users = await usersTable.getUserByIDs(ids);
     friends.forEach( (friend, index) => {
-        let imageid =  users[index].user_imageid
-        friend['user_imageurl'] =  ServerIP + `userimage/${imageid}`
+        let user_imageurl =  users[index].user_imageurl
+        friend['user_imageurl'] = user_imageurl// ServerIP + `userimage/${imageid}`
     });
     res.json(friends);
   } catch (error) {

@@ -17,10 +17,11 @@ let projectOutput = {
       },
     },
   },
+  distance : "$distance",
   user_id: "$user_id",
   restaurant_id: "$restaurant_id",
   created_at: "$created_at",
-};
+}
 
 let randomPostProjectOutput = {
   post_id: "$randomPost._id",
@@ -36,9 +37,10 @@ let randomPostProjectOutput = {
       },
     },
   },
+  distance : "$randomPost.distance",
   user_id: "$randomPost.user_id",
   restaurant_id: "$randomPost.restaurant_id",
-  location : "$location",
+  location : "$distance",
   created_at: "$randomPost.created_at",
 };
 

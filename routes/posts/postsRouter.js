@@ -8,7 +8,8 @@ const mime = require('mime');
 const Mongodb_postsCollectionService = require("../../util/mongoose/postsCollection.js");
 const { JsonWebTokenError } = require("jsonwebtoken");
 const postsCollectionService = new Mongodb_postsCollectionService()
-const friednsPostsRouter = require('./friendsPostsRouter.js')
+const friednsPostsRouter = require('./friendsPostsRouter.js');
+const { error } = require("neo4j-driver");
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, './public/media/postmedia');
@@ -39,6 +40,7 @@ const upload = multer({
     }
   },
 });
+
 router.use("/friends", friednsPostsRouter)
 
 router.get("/:id", async (req, res, next) => {
@@ -61,22 +63,18 @@ router.post("/", upload.array(`media`, 5), findRestaurantIDmiddleware, async (re
     if (files == undefined) {
       throw new Error("沒有選擇檔案上傳");
     }
-    let media_data = [];
-    files.forEach((value, index, array) => {
-      const filename = `${value.filename}`;
+    let media_data = files.map( (file, index) => {
+      const filename = `${file.filename}`;
       if (req.post_itemtitles[index] == "") {
         req.post_itemtitles[index] = null;
       }
-      let object = {
+      let model = {
         media_id: filename,
         itemtitle: req.post_itemtitles[index],
         _id : null
-      };
-      media_data.push(object);
-    });
-    if (media_data.length < 1) {
-      throw new Error("沒有上傳影像 新建Post失敗");
-    }
+      }
+      return model
+    })
 
     const location = {
       type: "Point",
@@ -92,6 +90,7 @@ router.post("/", upload.array(`media`, 5), findRestaurantIDmiddleware, async (re
     );
     res.status(200).json("上傳成功")
     } catch (error) {
+      console.log(error)
       res.end(error.message)
       return
     } finally {
@@ -127,6 +126,8 @@ async function findRestaurantIDmiddleware(req, res, next) {
       req.location =  [restaurant_longitude, restaurant_latitude ]
       next();
     } else {
+      console.log(error)
+      next(error)
       throw new Error("未預期的錯誤")
     }
   } catch (error) {

@@ -25,6 +25,7 @@ class common_functionObject {
   }
 
   mergeJsonProperties(posts, users, restaurants) {
+
     let result = posts.map( post => {
       let targetuser, targetrestaurant;
       for (const [index, user] of users.entries()) {

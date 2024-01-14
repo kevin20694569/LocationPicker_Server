@@ -7,6 +7,8 @@ const {
   locationpickermongoDB,
 } = require("./mongodbModel");
 const { ResultSummary } = require("neo4j-driver");
+const { restart } = require("nodemon");
+const { diskStorage } = require("multer");
 
 class Mongodb_postsCollectionService {
   constructor() {
@@ -28,7 +30,6 @@ class Mongodb_postsCollectionService {
       await postmodel.save();
       return postmodel;
     } catch (error) {
-      console.log(error);
       throw new Error("新建貼文失敗");
     }
   }
@@ -45,6 +46,52 @@ class Mongodb_postsCollectionService {
       return randomPosts.map((result) => result.randomPost);
     } else {
       throw new Error("錯誤nearlocation");
+    }
+  }
+
+  async getRandomPublicPostsFromDistance(long, lat, distanceThreshold) {
+    try {
+      long = parseFloat(long);
+      lat = parseFloat(lat);
+      distanceThreshold = parseFloat(distanceThreshold);
+      const results = await this.Post.aggregate([
+        {
+          $geoNear: {
+            near: { type: "Point", coordinates: [long, lat] },
+            distanceField: "distance",
+            spherical: true,
+          },
+        },
+        {
+          $match: {
+            distance: { $gt: distanceThreshold },
+          },
+        },
+        {
+          $group: { _id: "$restaurant_id", posts: { $push: "$$ROOT" } },
+        },
+        {
+          $addFields: {
+            randomPost: {
+              $arrayElemAt: [
+                "$posts",
+                { $floor: { $multiply: [{ $rand: {} }, { $size: "$posts" }] } },
+              ],
+            },
+          },
+        },
+        { $project: { randomPost: this.randomPostProjectOutput } },
+        { $sort: { "randomPost.distance": 1 } },
+        { $limit: 5 },
+      ]);
+
+      if (results.length > 0) {
+        return results.map((result) => result.randomPost);
+      } else {
+        throw new Error("錯誤near餐廳post");
+      }
+    } catch (error) {
+      throw error;
     }
   }
 
@@ -94,6 +141,7 @@ class Mongodb_postsCollectionService {
     long
   ) {
     try {
+      distanceThreshold = parseFloat(distanceThreshold)
       long = parseFloat(long);
       lat = parseFloat(lat);
       const results = await this.Post.aggregate([
@@ -121,19 +169,17 @@ class Mongodb_postsCollectionService {
                 { $floor: { $multiply: [{ $rand: {} }, { $size: "$posts" }] } },
               ],
             },
-            
           },
         },
-        { $sort: { distance: 1 } },
+        { $sort: { "randomPost.distance": 1 } },
         { $project: { randomPost: this.randomPostProjectOutput } },
-      ]); 
-      
-      console.log(results[0])
+        { $limit: 6 },
+      ]);
 
       if (results.length > 0) {
         return results.map((result) => result.randomPost);
       } else {
-        throw new Error("錯誤朋友餐廳post");
+        return []
       }
     } catch (error) {
       throw error;
@@ -159,12 +205,33 @@ class Mongodb_postsCollectionService {
     }
   }
 
-  async getFriendsPostByCreatedTime(friend_Ids, date) {
+  async getFriendsPostByCreatedTime(friend_Ids, date, longtitude, latitude) {
     try {
+      longtitude = parseFloat(longtitude);
+      latitude = parseFloat(latitude);
+      let gt_date;
+      if (date == undefined || date == "" || date == 0) {
+        gt_date = new Date();
+      } else {
+        gt_date = new Date(date);
+      }
       let match = [
-        { $match: { user_id: { $in: friend_Ids } } },
+        {
+          $geoNear: {
+            near: { type: "Point", coordinates: [longtitude, latitude] },
+            distanceField: "distance", // 将计算的距离保存在 "distance" 字段中
+            spherical: true,
+          },
+        },
+        {
+          $match: {
+            user_id: { $in: friend_Ids },
+            created_at: { $lt: gt_date },
+          },
+        },
         { $project: this.projectOutput },
         { $sort: { created_at: 1 } },
+        { $limit: 6 },
       ];
       const posts = await this.Post.aggregate(match);
 

@@ -22,7 +22,7 @@ router.get("/:id", async (req, res, next) => {
     for (const result of results) {
       Array.push(result.user_id);
     }
-    let userResults = await userTableService.getUserByID(Array);
+    let userResults = await userTableService.getUserByIDs(Array);
     for (const [index, user_id] of Array.entries() ) {
       let user;
       if (userResults[index]) {

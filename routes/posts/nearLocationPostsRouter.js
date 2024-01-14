@@ -18,35 +18,21 @@ const common_utils = new common_functionObject();
 router.get("/", async (req, res) => {
   let { latitude, longitude, distance, lastrestaurantid } = req.query;
   try {
-    /*let restaurants = await restaurantTableService.getnearlocactionRestaurants(
-      latitude,
-      longitude,
-      distance,
-      lastrestaurantid,
-      3
-    );
-
-    let restaurants_IDs = restaurants.map((restaurant) => {
-      return restaurant.restaurant_id;
-    });
-    
-    let posts = await postsCollectionService.getRandomPostsFromRestautants(
-      restaurants_IDs
-    );*/
     let posts = await postsCollectionService.getRandomPublicPostsFromDistance(longitude, latitude, distance)
+    let restaurant_Ids = posts.map(post => {
+      return post.restaurant_id
+    })
+    let [restaurants, fileds] = await restaurantTableService.getRestaurantsDetail(restaurant_Ids)
 
     let users_IDs = posts.map((post) => {
       return post.user_id;
     });
     let users = await userTableService.getUserByIDs(users_IDs);
-    let json =
-      common_utils.mergeJsonPropertiesForPostsLengthEqualRestaurantLength(
+    let json = common_utils.mergeJsonProperties(
         posts,
         users,
         restaurants
       );
-
-    console.log(json)
     res.json(json);
     res.status(200);
     res.end();
@@ -70,14 +56,17 @@ router.get("/friends/:id", async (req, res) => {
     let friend_ID_Array = friends.map((friend) => {
       return friend.user_ID;
     });
-
     let posts =
       await postsCollectionService.getNearLocationPostsFromFriendsByUserID(
         friend_ID_Array,
-        0,
+        distance,
         latitude,
         longitude
       );
+    if (posts.length < 1) {
+      res.send("沒有更多posts")
+      return
+    }
     let restaurant_Ids = posts.map((post) => {
       return post.restaurant_id;
     });
@@ -88,7 +77,7 @@ router.get("/friends/:id", async (req, res) => {
     }
     let users = await userTableService.getUserByIDs(friend_ID_Array);
     let json =
-      common_utils.mergeJsonPropertiesForPostsLengthEqualRestaurantLength(
+      common_utils.mergeJsonProperties(
         posts,
         users,
         restaurants

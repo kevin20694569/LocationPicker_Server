@@ -1,4 +1,5 @@
 const httpIP = require('../extension/constant').ServerIP
+const { constants } = require('short-uuid');
 const mysqlServer = require("./mysqlDBPool");
 
 class mysqlUsersTableService {
@@ -51,7 +52,7 @@ class mysqlUsersTableService {
     }
   }
   
-  async selectuserfromemail(email) {
+  /*async selectuserfromemail(email) {
     try {
       await this.getConnection()
       let query = `SELECT * FROM users Where user_email = ?`;
@@ -63,18 +64,18 @@ class mysqlUsersTableService {
     } finally {
       await this.release()
     }
-  }
+  }*/
   
   async getUserPostsProfileByID(userid) {
       try {
+        let IP = httpIP + "userimage/"
         await this.getConnection()
         let userquery =
-          "select user_id, user_name, user_imageid, user_email from users where user_id = ?";
-        let userparams = [userid];
-        
+          "select user_id, user_name, CONCAT(?, user_imageid) AS user_imageurl, user_email from users where user_id = ?";
+        let userparams = [IP, userid];
         let [userresults, userfileds] = await this.connection.query(userquery, userparams);
         let user = userresults[0]
-        user["user_imageurl"] = httpIP + "userimage/" + `${user.user_imageid}`
+        user["user_imageurl"] = user.user_imageurl // httpIP + "userimage/" + `${user.user_imageid}`
         return user
       } catch (error) {
         throw error;
@@ -84,11 +85,12 @@ class mysqlUsersTableService {
     }
 
   
-  async getUserByID(user_id) {
+  async getUserByIDs(user_id) {
     try {
+      let IP = httpIP + "userimage/"
       await this.getConnection()
-      let query = `select user_id, user_name, user_imageid from users where user_id in (?);`;
-      var params = [user_id];
+      let query = `select user_id, user_name, CONCAT(?, user_imageid) AS user_imageurl  from users where user_id in (?);`;
+      var params = [IP, user_id];
       let [results, fileds] = await this.connection.query(query, params);
       if ( results.length > 0 ) {
         return results

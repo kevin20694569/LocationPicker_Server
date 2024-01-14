@@ -20,7 +20,7 @@ router.get("/:id", async (req, res) => {
     let ids = from_user.map((user) => {
       return user['user_ID']
     });
-    let users = await usersTable.getUserByID(ids)
+    let users = await usersTable.getUserByIDs(ids)
     console.log(users)
 
     for (const [index, element] of request.entries()) {
@@ -28,7 +28,7 @@ router.get("/:id", async (req, res) => {
       let object = {
         ...request[index],
         ...from_user[index],
-        "user_imageurl" :  ServerIP +  "userimage/" + users[index].user_imageid
+        "user_imageurl" : /* ServerIP +  "userimage/" +*/ users[index].user_imageurl
       };
       json.push(object);
     }

@@ -16,13 +16,14 @@ router.get('/preview/:id', async (req, res) => {
       request_user_id = parseInt(request_user_id)
       let { date } = req.query;
         let results = await chatRoomsCollectionService.getPreviewByUserId(request_user_id, date)
+        
         let user_ids = results.map( ( (result) => {
           let array = result.room_id.split('_')
           return parseInt(array[1])
-        }) )
-        let users = await usersTable.getUserByID(user_ids)
+        }))
+        let users = await usersTable.getUserByIDs(user_ids)
         results.map( (result, index) => {
-          result['room_imageid'] = ServerIP + "userimage/" + users[index].user_imageid
+          result['room_imageid'] =/* ServerIP + "userimage/" + */users[index].user_imageurl
           result['name'] =  users[index].user_name
           if (result['senderId'] == request_user_id) {
             result['isRead'] = true
