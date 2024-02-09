@@ -79,11 +79,13 @@ router.post("/", upload.array(`media`, 5), findRestaurantIDmiddleware, async (re
     };
 
     let result = await postsCollectionService.insertPost(
+      req.post_title,
       req.post_content,
       media_data,
       req.user_id,
       location,
-      req.restaurant_id
+      req.restaurant_id,
+      req.grade
     );
     res.status(200).json("上傳成功");
   } catch (error) {
@@ -99,20 +101,12 @@ async function findRestaurantIDmiddleware(req, res, next) {
   try {
     let json = JSON.parse(req.body.json);
 
-    let {
-      user_id,
-      post_content,
-      restaurant_address,
-      post_itemtitles,
-      restaurant_name,
-      restaurant_ID,
-      grade,
-    } = json;
+    let { user_id, post_title, post_content, restaurant_address, post_itemtitles, restaurant_name, restaurant_ID, grade } = json;
 
-    let { restaurant_id, restaurant_latitude, restaurant_longitude } =
-      await restaurantTableService.findrestaurantIDByMySQL(restaurant_ID);
+    let { restaurant_id, restaurant_latitude, restaurant_longitude } = await restaurantTableService.findrestaurantIDByMySQL(restaurant_ID, grade);
 
     if (restaurant_id) {
+      req.post_title = post_title;
       req.post_content = post_content;
       req.grade = grade;
       req.post_itemtitles = post_itemtitles;

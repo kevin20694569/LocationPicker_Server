@@ -13,14 +13,16 @@ class Mongodb_postsCollectionService {
     this.locationpickermongoDB = locationpickermongoDB;
   }
 
-  async insertPost(post_content, media_data, user_id, location, restaurant_id) {
+  async insertPost(post_title, post_content, media_data, user_id, location, restaurant_id, grade) {
     try {
       let postmodel = new this.Post({
+        post_title: post_title,
         post_content: post_content,
         media_data: media_data,
         user_id: user_id,
         location: location,
         restaurant_id: restaurant_id,
+        grade: grade,
       });
 
       await postmodel.save();
@@ -245,6 +247,25 @@ class Mongodb_postsCollectionService {
     } catch (error) {
       throw new Error("Failed to increase reaction: " + error.message);
     }
+  }
+
+  async calculateRestaurantAverage() {
+    const result = await this.Post.aggregate([
+      {
+        $group: {
+          _id: "$restaurant_id", // 根据 restaurant_id 进行分组
+          average_grade: { $avg: "$grade" }, // 计算 grade 字段的平均值
+        },
+      },
+      {
+        $project: {
+          restaurant_id: "$_id",
+          _id: 0,
+          average_grade: 1,
+        },
+      },
+    ]);
+    return result;
   }
 
   getRandomPostaggregate = (orderby) => [

@@ -101,6 +101,10 @@ const PostSchema = new mongoose.Schema({
     sad: { type: Number, default: 0 },
     surprise: { type: Number, default: 0 },
   },
+  grade: {
+    type: Number,
+    default: null,
+  },
 });
 
 const messageSchema = new mongoose.Schema({
@@ -175,11 +179,68 @@ const reactionsSchema = new mongoose.Schema({
   },
 });
 
+const business_day_hoursSchema = new mongoose.Schema({
+  open: {
+    type: String,
+    default: null,
+  },
+  close: {
+    type: String,
+    default: null,
+  },
+});
+
+const business_daySchema = new mongoose.Schema({
+  mon: {
+    type: [business_day_hoursSchema],
+    default: null,
+  },
+  tues: {
+    type: [business_day_hoursSchema],
+    default: null,
+  },
+  wed: {
+    type: [business_day_hoursSchema],
+    default: null,
+  },
+  thur: {
+    type: [business_day_hoursSchema],
+    default: null,
+  },
+  fri: {
+    type: [business_day_hoursSchema],
+    default: null,
+  },
+  sat: {
+    type: [business_day_hoursSchema],
+    default: null,
+  },
+  sun: {
+    type: [business_day_hoursSchema],
+    default: null,
+  },
+});
+
+const business_timeSchema = new mongoose.Schema({
+  place_id: {
+    type: String,
+    require: true,
+  },
+  opening_hours: {
+    type: business_daySchema,
+    require: false,
+    default: null,
+  },
+});
+
 var Post = locationpickermongoDB.model("posts", PostSchema);
 var message = locationpickermongoDB.model("messages", messageSchema);
 var user = locationpickermongoDB.model("users", userSchema);
 var chatroom = locationpickermongoDB.model("chatRooms", chatroomSchema);
 var reaction = locationpickermongoDB.model("reactions", reactionsSchema);
+var business_day_hours = locationpickermongoDB.model("business_day_hours", business_day_hoursSchema);
+var business_day = locationpickermongoDB.model("business_day", business_daySchema);
+var business_times = locationpickermongoDB.model("business_times", business_timeSchema);
 
 module.exports = {
   Post,
@@ -187,6 +248,9 @@ module.exports = {
   user,
   chatroom,
   reaction,
+  business_day_hours,
+  business_day,
+  business_times,
   locationpickermongoDB,
   projectOutput,
   randomPostProjectOutput,

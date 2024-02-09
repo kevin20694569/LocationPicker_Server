@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const mysqlUserTableService = require('../../util/mysql/usersTable');
-const userTableService = new mysqlUserTableService()
+const mysqlUserTableService = require("../../util/mysql/usersTable");
+const userTableService = new mysqlUserTableService();
 
 router.get("/:id", async (req, res, next) => {
   let id = req.params.id;

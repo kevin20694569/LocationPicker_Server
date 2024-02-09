@@ -1,30 +1,19 @@
-const mysqlServer = require("./mysqlDBPool");
+const MySQLDataBase = require("./mysqlDBPool").MySQLDataBase;
 
 const googleMapAPIService = require("../googlemap/googleMapAPIService");
-const googleMapService = new googleMapAPIService()
+const googleMapService = new googleMapAPIService();
 const constant = require("../extension/constant");
-const { ServerIP } = constant
+const { ServerIP } = constant;
+const business_timesCollection = require("../mongoose/business_timesCollection");
+const business_timeService = new business_timesCollection.Mongodb_Business_TimesCollectionService();
 
-
-class mysqlRestaurantsTableService {
-  async release() {
-    try {
-      this.connection.release();
-    } catch (error) {
-      console.log(error.message);
-      throw new Error("關閉mysql 失敗");
-    }
-  }
-  async getConnection() {
-    try {
-      this.connection = await mysqlServer.getConnection();
-    } catch (error) {
-      console.log(error.message);
-      throw new Error("mysql伺服器連接失敗");
-    }
+class mysqlRestaurantsTableService extends MySQLDataBase {
+  constructor() {
+    super();
+    this.business_timeService = business_timeService;
   }
 
-  async findrestaurantIDByMySQL(restaurant_ID) {
+  async findrestaurantIDByMySQL(restaurant_ID, firstGrade) {
     try {
       await this.getConnection();
       let query = `select * from restaurants where restaurant_id = ?;`;
@@ -33,26 +22,21 @@ class mysqlRestaurantsTableService {
       if (results.length > 0) {
         return results[0];
       } else {
-        let { place_id, name, formatted_address, geometry, lat, lng, photos } =
-          await restaurantsearchfromgoogleByID(restaurant_ID);
+        let { place_id, name, formatted_address, geometry, lat, lng, photos, opening_hours } = await restaurantsearchfromgoogleByID(restaurant_ID);
         if (place_id == undefined || place_id == null) {
           throw new Error("找不到地點");
         }
         let { photo_reference } = photos[0];
         let imageID = await googleMapService.downloadPhoto(photo_reference, place_id);
-        let [results, fileds] = await this.createnewrestaurant(
-          place_id,
-          name,
-          formatted_address,
-          lat,
-          lng
-        );
+        let [results, fileds] = await this.createnewrestaurant(place_id, name, formatted_address, lat, lng, firstGrade);
         if (results.serverStatus == 2) {
+          let { periods } = opening_hours;
+          let business_Time = await this.business_timeService.insertNewBusinessTime(place_id, periods);
           let result = {
-            "restaurant_id" : place_id,
-            "restaurant_latitude" : lat,
-            "restaurant_longitude" : lng
-          }
+            restaurant_id: place_id,
+            restaurant_latitude: lat,
+            restaurant_longitude: lng,
+          };
           return result;
         } else {
           throw new Error("新建餐廳失敗");
@@ -63,7 +47,6 @@ class mysqlRestaurantsTableService {
     } finally {
       await this.release();
     }
-
   }
 
   async getrestaurant(restaurant_id, lat, lng) {
@@ -78,11 +61,7 @@ class mysqlRestaurantsTableService {
       );
       let restaurant = restaurantresults[0];
       let id = restaurant.restaurant_id;
-      restaurant["restaurant_imageurl"] =
-      ServerIP +
-        "restaurantimage/" +
-        restaurant.restaurant_id +
-        ".jpg";
+      restaurant["restaurant_imageurl"] = ServerIP + "restaurantimage/" + restaurant.restaurant_id + ".jpg";
       if (restaurantresults.length > 0) {
         return restaurantresults[0];
       } else {
@@ -95,11 +74,11 @@ class mysqlRestaurantsTableService {
     }
   }
 
-  async createnewrestaurant(place_id, name, formatted_address, lat, lng) {
+  async createnewrestaurant(place_id, name, formatted_address, lat, lng, firstGrade) {
     try {
       await this.getConnection();
-      let query = `insert into restaurants (restaurant_id, restaurant_name, restaurant_address, restaurant_latitude, restaurant_longitude) VALUES(?, ?, ?, ?, ?);`;
-      let params = [place_id, name, formatted_address, lat, lng];
+      let query = `insert into restaurants (restaurant_id, restaurant_name, restaurant_address, restaurant_latitude, restaurant_longitude, averge_grade) VALUES(?, ?, ?, ?, ?, ?);`;
+      let params = [place_id, name, formatted_address, lat, lng, firstGrade];
       const [results, fileds] = await this.connection.query(query, params);
       return [results, fileds];
     } catch (error) {
@@ -108,6 +87,7 @@ class mysqlRestaurantsTableService {
       await this.release();
     }
   }
+
   async getRestaurantsDetail(restaurant_Ids) {
     try {
       await this.getConnection();
@@ -122,7 +102,7 @@ class mysqlRestaurantsTableService {
     }
   }
 
-  async getnearlocactionRestaurants( latitude, longitude, offset, lastrestaurantid, limit ) {
+  async getnearlocactionRestaurants(latitude, longitude, offset, lastrestaurantid, limit) {
     try {
       await this.getConnection();
       let query = `select  *,
@@ -135,7 +115,7 @@ class mysqlRestaurantsTableService {
       limit ?`;
 
       if (offset) {
-        var params = [ longitude, latitude, longitude, latitude, offset, lastrestaurantid, limit];
+        var params = [longitude, latitude, longitude, latitude, offset, lastrestaurantid, limit];
       } else {
         var params = [longitude, latitude, longitude, latitude, 0, "", limit];
       }
@@ -143,9 +123,7 @@ class mysqlRestaurantsTableService {
       let [results, fileds] = await this.connection.query(query, params);
 
       for (const value of results) {
-        value[
-          "restaurant_imageurl"
-        ] = ServerIP + `restaurantimage/${value.restaurant_id}.jpg`;
+        value["restaurant_imageurl"] = ServerIP + `restaurantimage/${value.restaurant_id}.jpg`;
       }
       return results;
     } catch (error) {
@@ -154,14 +132,36 @@ class mysqlRestaurantsTableService {
       await this.release();
     }
   }
-}
+  async getAllTableRestaurants() {
+    try {
+      await this.getConnection();
+      let query = `select * from restaurants;`;
+      const [results, fileds] = await this.connection.query(query);
+      return results;
+    } catch (error) {
+      throw error;
+    } finally {
+      super.release();
+    }
+  }
 
+  async updateAverageGrade(restaurant_id, averge_grade) {
+    try {
+      await this.getConnection();
+      let query = `update restaurants set average_grade = ? where restaurant_id = ?;`;
+      let params = [averge_grade, restaurant_id];
+      const [results, fileds] = await this.connection.query(query, params);
+      return results;
+    } catch (error) {
+      throw error;
+    }
+  }
+}
 
 async function restaurantsearchfromgoogleByID(location_ID) {
   let result = await googleMapService.searchPlaceByID(location_ID);
-  let { place_id, name, formatted_address, geometry, photos } = result;
+  let { place_id, name, formatted_address, geometry, photos, opening_hours } = result;
   let { lat, lng } = geometry.location;
-  return { place_id, name, formatted_address, geometry, lat, lng, photos };
+  return { place_id, name, formatted_address, geometry, lat, lng, photos, opening_hours };
 }
-
 module.exports = mysqlRestaurantsTableService;

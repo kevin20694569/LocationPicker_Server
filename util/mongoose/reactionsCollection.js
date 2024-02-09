@@ -1,6 +1,5 @@
 const { reaction } = require("./mongodbModel");
 const Mongodb_postsCollectionService = require("../../util/mongoose/postsCollection");
-const e = require("express");
 const postsCollectionService = new Mongodb_postsCollectionService();
 
 class Mongodb_ReactionsCollectionService {
