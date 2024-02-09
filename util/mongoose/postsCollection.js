@@ -1,11 +1,6 @@
 const mongoose = require("mongoose");
 
-const {
-  Post,
-  projectOutput,
-  randomPostProjectOutput,
-  locationpickermongoDB,
-} = require("./mongodbModel");
+const { Post, projectOutput, randomPostProjectOutput, locationpickermongoDB } = require("./mongodbModel");
 const { ResultSummary } = require("neo4j-driver");
 const { restart } = require("nodemon");
 const { diskStorage } = require("multer");
@@ -17,6 +12,7 @@ class Mongodb_postsCollectionService {
     this.randomPostProjectOutput = randomPostProjectOutput;
     this.locationpickermongoDB = locationpickermongoDB;
   }
+
   async insertPost(post_content, media_data, user_id, location, restaurant_id) {
     try {
       let postmodel = new this.Post({
@@ -73,10 +69,7 @@ class Mongodb_postsCollectionService {
         {
           $addFields: {
             randomPost: {
-              $arrayElemAt: [
-                "$posts",
-                { $floor: { $multiply: [{ $rand: {} }, { $size: "$posts" }] } },
-              ],
+              $arrayElemAt: ["$posts", { $floor: { $multiply: [{ $rand: {} }, { $size: "$posts" }] } }],
             },
           },
         },
@@ -98,10 +91,7 @@ class Mongodb_postsCollectionService {
   async getPostFromID(Post_ID) {
     try {
       let id = new mongoose.Types.ObjectId(Post_ID);
-      const results = await this.Post.aggregate([
-        { $match: { _id: id } },
-        { $project: this.projectOutput },
-      ]);
+      const results = await this.Post.aggregate([{ $match: { _id: id } }, { $project: this.projectOutput }]);
       if (results.length > 0) {
         return results;
       } else {
@@ -134,14 +124,9 @@ class Mongodb_postsCollectionService {
       throw error;
     }
   }
-  async getNearLocationPostsFromFriendsByUserID(
-    friendIds,
-    distanceThreshold,
-    lat,
-    long
-  ) {
+  async getNearLocationPostsFromFriendsByUserID(friendIds, distanceThreshold, lat, long) {
     try {
-      distanceThreshold = parseFloat(distanceThreshold)
+      distanceThreshold = parseFloat(distanceThreshold);
       long = parseFloat(long);
       lat = parseFloat(lat);
       const results = await this.Post.aggregate([
@@ -164,10 +149,7 @@ class Mongodb_postsCollectionService {
         {
           $addFields: {
             randomPost: {
-              $arrayElemAt: [
-                "$posts",
-                { $floor: { $multiply: [{ $rand: {} }, { $size: "$posts" }] } },
-              ],
+              $arrayElemAt: ["$posts", { $floor: { $multiply: [{ $rand: {} }, { $size: "$posts" }] } }],
             },
           },
         },
@@ -179,7 +161,7 @@ class Mongodb_postsCollectionService {
       if (results.length > 0) {
         return results.map((result) => result.randomPost);
       } else {
-        return []
+        return [];
       }
     } catch (error) {
       throw error;
@@ -245,6 +227,26 @@ class Mongodb_postsCollectionService {
     }
   }
 
+  async updatePostReactionCount(post_id, needIncreaseReactionType, needDecreaseReactionType, likeAddCount) {
+    try {
+      post_id = new mongoose.Types.ObjectId(post_id);
+      const post = await this.Post.findById(post_id);
+      if (needIncreaseReactionType) {
+        post.reactions[needIncreaseReactionType]++;
+      }
+      if (needDecreaseReactionType) {
+        post.reactions[needDecreaseReactionType]--;
+      }
+      if (likeAddCount) {
+        post.reactions["like"] += likeAddCount;
+      }
+      await post.save();
+      return post;
+    } catch (error) {
+      throw new Error("Failed to increase reaction: " + error.message);
+    }
+  }
+
   getRandomPostaggregate = (orderby) => [
     {
       $group: { _id: "$restaurant_id", posts: { $push: "$$ROOT" } },
@@ -252,10 +254,7 @@ class Mongodb_postsCollectionService {
     {
       $addFields: {
         randomPost: {
-          $arrayElemAt: [
-            "$posts",
-            { $floor: { $multiply: [{ $rand: {} }, { $size: "$posts" }] } },
-          ],
+          $arrayElemAt: ["$posts", { $floor: { $multiply: [{ $rand: {} }, { $size: "$posts" }] } }],
         },
         sortOrder: { $indexOfArray: [orderby, "$_id"] },
       },

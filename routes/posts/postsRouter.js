@@ -1,18 +1,18 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const mysqlRestaurantsTableService = require('../../util/mysql/restaurantsTabel.js');
-const restaurantTableService = new mysqlRestaurantsTableService()
+const mysqlRestaurantsTableService = require("../../util/mysql/restaurantsTabel.js");
+const restaurantTableService = new mysqlRestaurantsTableService();
 const shortid = require("short-uuid");
-const mime = require('mime');
+const mime = require("mime");
 const Mongodb_postsCollectionService = require("../../util/mongoose/postsCollection.js");
 const { JsonWebTokenError } = require("jsonwebtoken");
-const postsCollectionService = new Mongodb_postsCollectionService()
-const friednsPostsRouter = require('./friendsPostsRouter.js');
+const postsCollectionService = new Mongodb_postsCollectionService();
+const friednsPostsRouter = require("./friendsPostsRouter.js");
 const { error } = require("neo4j-driver");
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, './public/media/postmedia');
+    cb(null, "./public/media/postmedia");
   },
   filename: function (req, file, cb) {
     const shortUUID = shortid();
@@ -20,9 +20,9 @@ const storage = multer.diskStorage({
     const mimeType = mime.lookup(file.mimetype);
     let ext = "";
     if (mimeType.startsWith("image/")) {
-      ext = '.jpg'
-    } else if (mimeType.startsWith('video/')) {
-      ext = '.mp4'
+      ext = ".jpg";
+    } else if (mimeType.startsWith("video/")) {
+      ext = ".mp4";
     }
     cb(null, uuid + ext);
   },
@@ -41,29 +41,26 @@ const upload = multer({
   },
 });
 
-router.use("/friends", friednsPostsRouter)
-
+router.use("/friends", friednsPostsRouter);
 router.get("/:id", async (req, res, next) => {
   try {
     let id = req.params.id;
     let data = await postsCollectionService.getPostFromID(id);
     res.json(data);
   } catch (error) {
-    res.status(404).send(error.message)
+    res.status(404).send(error.message);
     console.log(error);
   }
   res.end();
 });
 
-
-
 router.post("/", upload.array(`media`, 5), findRestaurantIDmiddleware, async (req, res, next) => {
-    try {
+  try {
     let files = req.files;
     if (files == undefined) {
       throw new Error("沒有選擇檔案上傳");
     }
-    let media_data = files.map( (file, index) => {
+    let media_data = files.map((file, index) => {
       const filename = `${file.filename}`;
       if (req.post_itemtitles[index] == "") {
         req.post_itemtitles[index] = null;
@@ -71,10 +68,10 @@ router.post("/", upload.array(`media`, 5), findRestaurantIDmiddleware, async (re
       let model = {
         media_id: filename,
         itemtitle: req.post_itemtitles[index],
-        _id : null
-      }
-      return model
-    })
+        _id: null,
+      };
+      return model;
+    });
 
     const location = {
       type: "Point",
@@ -88,16 +85,15 @@ router.post("/", upload.array(`media`, 5), findRestaurantIDmiddleware, async (re
       location,
       req.restaurant_id
     );
-    res.status(200).json("上傳成功")
-    } catch (error) {
-      console.log(error)
-      res.end(error.message)
-      return
-    } finally {
-      res.end();
-    }
+    res.status(200).json("上傳成功");
+  } catch (error) {
+    console.log(error);
+    res.end(error.message);
+    return;
+  } finally {
+    res.end();
   }
-);
+});
 
 async function findRestaurantIDmiddleware(req, res, next) {
   try {
@@ -113,7 +109,8 @@ async function findRestaurantIDmiddleware(req, res, next) {
       grade,
     } = json;
 
-    let { restaurant_id, restaurant_latitude, restaurant_longitude } = await restaurantTableService.findrestaurantIDByMySQL( restaurant_ID );
+    let { restaurant_id, restaurant_latitude, restaurant_longitude } =
+      await restaurantTableService.findrestaurantIDByMySQL(restaurant_ID);
 
     if (restaurant_id) {
       req.post_content = post_content;
@@ -123,23 +120,18 @@ async function findRestaurantIDmiddleware(req, res, next) {
       req.restaurant_address = restaurant_address;
       req.user_id = user_id;
       req.restaurant_id = restaurant_id;
-      req.location =  [restaurant_longitude, restaurant_latitude ]
+      req.location = [restaurant_longitude, restaurant_latitude];
       next();
     } else {
-      console.log(error)
-      next(error)
-      throw new Error("未預期的錯誤")
+      console.log(error);
+      next(error);
+      throw new Error("未預期的錯誤");
     }
   } catch (error) {
-    res.status(404)
+    res.status(404);
     res.end(error.message);
     console.log(error);
   }
 }
-
-
-
-
-
 
 module.exports = router;

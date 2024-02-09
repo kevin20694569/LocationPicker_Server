@@ -4,10 +4,7 @@ class Neo4j_FriendShipsService {
   static driver;
   constructor() {
     if (!Neo4j_FriendShipsService.driver) {
-      this.driver = neo4j.driver(
-        "neo4j://localhost:7687",
-        neo4j.auth.basic("neo4j", "j1218s0725v0620")
-      );
+      this.driver = neo4j.driver("neo4j://localhost:7687", neo4j.auth.basic("neo4j", "j1218s0725v0620"));
       Neo4j_FriendShipsService.instance = this;
     }
     return Neo4j_FriendShipsService.instance;
@@ -67,7 +64,7 @@ class Neo4j_FriendShipsService {
         from_user_id,
         to_user_id,
       });
-      console.log(results)
+      console.log(results);
       if (results.records.length <= 0) {
         throw new Error("寄送邀請失敗");
       }
@@ -81,8 +78,8 @@ class Neo4j_FriendShipsService {
 
   async acceptToCreateFriendship(accept_user_id, friend_request_id) {
     this.session = await this.createSession();
-    accept_user_id = parseInt(accept_user_id)
-    friend_request_id = parseInt(friend_request_id)
+    accept_user_id = parseInt(accept_user_id);
+    friend_request_id = parseInt(friend_request_id);
     try {
       let query = `
       MATCH (user2: User { user_ID : $accept_user_id })
@@ -185,7 +182,7 @@ class Neo4j_FriendShipsService {
       Return from_user, to_user;      
       `;
       let results = await this.session.run(query, { from_user_id, to_user_id });
-      console.log(results)
+      console.log(results);
 
       if (results.records.length <= 0) {
         throw new Error("刪除朋友邀請失敗");
@@ -197,10 +194,24 @@ class Neo4j_FriendShipsService {
       this.session.close();
     }
   }
-  
+
+  transFormToJSONNeo4jResults(searchResults, key) {
+    try {
+      let results = searchResults.records.map((record) => {
+        var result = record.get(`${key}`);
+        let id = (result.identity.high << 32) + result.identity.low;
+        let json = {
+          [`${key}_ID`]: id,
+          ...result.properties,
+        };
+        return json;
+      });
+      return results;
+    } catch {
+      throw new Error("transform results 失敗");
+    }
+  }
 }
-
-
 
 function transFormToJSONNeo4jResults(searchResults, key) {
   try {
@@ -221,5 +232,5 @@ function transFormToJSONNeo4jResults(searchResults, key) {
 
 module.exports = {
   Neo4j_FriendShipsService,
-  transFormToJSONNeo4jResults
+  transFormToJSONNeo4jResults,
 };

@@ -17,11 +17,12 @@ let projectOutput = {
       },
     },
   },
-  distance : "$distance",
+  distance: "$distance",
   user_id: "$user_id",
   restaurant_id: "$restaurant_id",
   created_at: "$created_at",
-}
+  reactions: "$reactions",
+};
 
 let randomPostProjectOutput = {
   post_id: "$randomPost._id",
@@ -37,11 +38,12 @@ let randomPostProjectOutput = {
       },
     },
   },
-  distance : "$randomPost.distance",
+  distance: "$randomPost.distance",
   user_id: "$randomPost.user_id",
   restaurant_id: "$randomPost.restaurant_id",
-  location : "$distance",
+  location: "$distance",
   created_at: "$randomPost.created_at",
+  reactions: "$reactions",
 };
 
 const mediaSchema = new mongoose.Schema({
@@ -91,6 +93,14 @@ const PostSchema = new mongoose.Schema({
     require: true,
     default: new Date(),
   },
+  reactions: {
+    like: { type: Number, default: 0 },
+    love: { type: Number, default: 0 },
+    vomit: { type: Number, default: 0 },
+    angry: { type: Number, default: 0 },
+    sad: { type: Number, default: 0 },
+    surprise: { type: Number, default: 0 },
+  },
 });
 
 const messageSchema = new mongoose.Schema({
@@ -112,44 +122,71 @@ const messageSchema = new mongoose.Schema({
   },
   created_time: {
     type: Date,
-    require: true
+    require: true,
   },
 });
 
 const userSchema = new mongoose.Schema({
-  user_id : {
-    type : Number,
-    require : true,
+  user_id: {
+    type: Number,
+    require: true,
   },
-  chatRoomIds : [
+  chatRoomIds: [
     {
-      type : String,
-    }
-  ]
+      type: String,
+    },
+  ],
 });
 
 const chatroomSchema = new mongoose.Schema({
-  room_id : {
-    type : String,
-    require : true
+  room_id: {
+    type: String,
+    require: true,
   },
-  room_users : [
+  room_users: [
     {
-      type : Number
-    }
-  ]
-})
+      type: Number,
+    },
+  ],
+});
+
+const reactionsSchema = new mongoose.Schema({
+  post_id: {
+    type: String,
+    require: true,
+  },
+  user_id: {
+    type: Number,
+    require: true,
+  },
+  reaction: {
+    type: String,
+    default: null,
+  },
+  liked: {
+    type: Boolean,
+    require: true,
+    default: false,
+  },
+  updated_at: {
+    type: Date,
+    require: true,
+    default: new Date(),
+  },
+});
+
 var Post = locationpickermongoDB.model("posts", PostSchema);
 var message = locationpickermongoDB.model("messages", messageSchema);
 var user = locationpickermongoDB.model("users", userSchema);
 var chatroom = locationpickermongoDB.model("chatRooms", chatroomSchema);
-
+var reaction = locationpickermongoDB.model("reactions", reactionsSchema);
 
 module.exports = {
   Post,
   message,
   user,
   chatroom,
+  reaction,
   locationpickermongoDB,
   projectOutput,
   randomPostProjectOutput,

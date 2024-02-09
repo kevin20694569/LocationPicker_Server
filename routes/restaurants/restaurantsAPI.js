@@ -1,8 +1,7 @@
-var express = require('express');
+var express = require("express");
 var router = express.Router();
-const restaurantRouter = require('./restaurantsRouter')
+const restaurantRouter = require("./restaurantsRouter");
 
-
-router.use('/', restaurantRouter)
+router.use("/", restaurantRouter);
 
 module.exports = router;
