@@ -182,41 +182,12 @@ const reactionsSchema = new mongoose.Schema({
 const business_day_hoursSchema = new mongoose.Schema({
   open: {
     type: String,
+    required: false,
     default: null,
   },
   close: {
     type: String,
-    default: null,
-  },
-});
-
-const business_daySchema = new mongoose.Schema({
-  mon: {
-    type: [business_day_hoursSchema],
-    default: null,
-  },
-  tues: {
-    type: [business_day_hoursSchema],
-    default: null,
-  },
-  wed: {
-    type: [business_day_hoursSchema],
-    default: null,
-  },
-  thur: {
-    type: [business_day_hoursSchema],
-    default: null,
-  },
-  fri: {
-    type: [business_day_hoursSchema],
-    default: null,
-  },
-  sat: {
-    type: [business_day_hoursSchema],
-    default: null,
-  },
-  sun: {
-    type: [business_day_hoursSchema],
+    required: false,
     default: null,
   },
 });
@@ -227,7 +198,15 @@ const business_timeSchema = new mongoose.Schema({
     require: true,
   },
   opening_hours: {
-    type: business_daySchema,
+    type: {
+      mon: [{ type: mongoose.Schema.Types.ObjectId, ref: "business_day_hours" }],
+      tues: [{ type: mongoose.Schema.Types.ObjectId, ref: "business_day_hours" }],
+      wed: [{ type: mongoose.Schema.Types.ObjectId, ref: "business_day_hours" }],
+      thur: [{ type: mongoose.Schema.Types.ObjectId, ref: "business_day_hours" }],
+      fri: [{ type: mongoose.Schema.Types.ObjectId, ref: "business_day_hours" }],
+      sat: [{ type: mongoose.Schema.Types.ObjectId, ref: "business_day_hours" }],
+      sun: [{ type: mongoose.Schema.Types.ObjectId, ref: "business_day_hours" }],
+    },
     require: false,
     default: null,
   },
@@ -239,7 +218,7 @@ var user = locationpickermongoDB.model("users", userSchema);
 var chatroom = locationpickermongoDB.model("chatRooms", chatroomSchema);
 var reaction = locationpickermongoDB.model("reactions", reactionsSchema);
 var business_day_hours = locationpickermongoDB.model("business_day_hours", business_day_hoursSchema);
-var business_day = locationpickermongoDB.model("business_day", business_daySchema);
+//var business_day = locationpickermongoDB.model("business_day", business_daySchema);
 var business_times = locationpickermongoDB.model("business_times", business_timeSchema);
 
 module.exports = {
@@ -249,7 +228,7 @@ module.exports = {
   chatroom,
   reaction,
   business_day_hours,
-  business_day,
+
   business_times,
   locationpickermongoDB,
   projectOutput,

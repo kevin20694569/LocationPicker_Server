@@ -11,6 +11,7 @@ class mysqlRestaurantsTableService extends MySQLDataBase {
   constructor() {
     super();
     this.business_timeService = business_timeService;
+    this.googleMapService = googleMapService;
   }
 
   async findrestaurantIDByMySQL(restaurant_ID, firstGrade) {
@@ -22,16 +23,20 @@ class mysqlRestaurantsTableService extends MySQLDataBase {
       if (results.length > 0) {
         return results[0];
       } else {
-        let { place_id, name, formatted_address, geometry, lat, lng, photos, opening_hours } = await restaurantsearchfromgoogleByID(restaurant_ID);
+        let { place_id, name, formatted_address, geometry, lat, lng, photos, opening_hours } = await this.restaurantsearchfromgoogleByID(
+          restaurant_ID
+        );
         if (place_id == undefined || place_id == null) {
           throw new Error("找不到地點");
         }
+        if (opening_hours == undefined) {
+          opening_hours = null;
+        }
         let { photo_reference } = photos[0];
-        let imageID = await googleMapService.downloadPhoto(photo_reference, place_id);
+        await googleMapService.downloadPhoto(photo_reference, place_id);
         let [results, fileds] = await this.createnewrestaurant(place_id, name, formatted_address, lat, lng, firstGrade);
         if (results.serverStatus == 2) {
-          let { periods } = opening_hours;
-          let business_Time = await this.business_timeService.insertNewBusinessTime(place_id, periods);
+          await this.business_timeService.insertNewBusinessTime(place_id, opening_hours);
           let result = {
             restaurant_id: place_id,
             restaurant_latitude: lat,
@@ -39,6 +44,7 @@ class mysqlRestaurantsTableService extends MySQLDataBase {
           };
           return result;
         } else {
+          await this.deleteRestaurant(place_id);
           throw new Error("新建餐廳失敗");
         }
       }
@@ -77,8 +83,23 @@ class mysqlRestaurantsTableService extends MySQLDataBase {
   async createnewrestaurant(place_id, name, formatted_address, lat, lng, firstGrade) {
     try {
       await this.getConnection();
-      let query = `insert into restaurants (restaurant_id, restaurant_name, restaurant_address, restaurant_latitude, restaurant_longitude, averge_grade) VALUES(?, ?, ?, ?, ?, ?);`;
+      let query = `insert into restaurants (restaurant_id, restaurant_name, restaurant_address, restaurant_latitude, restaurant_longitude, average_grade) VALUES(?, ?, ?, ?, ?, ?);`;
       let params = [place_id, name, formatted_address, lat, lng, firstGrade];
+      const [results, fileds] = await this.connection.query(query, params);
+      return [results, fileds];
+    } catch (error) {
+      throw error;
+    } finally {
+      await this.release();
+    }
+  }
+
+  async deleteRestaurant(place_id) {
+    try {
+      await this.getConnection();
+      let query = `DELETE FROM restaurants
+      WHERE restaurant_id = ?;`;
+      let params = [place_id];
       const [results, fileds] = await this.connection.query(query, params);
       return [results, fileds];
     } catch (error) {
@@ -156,12 +177,12 @@ class mysqlRestaurantsTableService extends MySQLDataBase {
       throw error;
     }
   }
+  async restaurantsearchfromgoogleByID(location_ID) {
+    let result = await this.googleMapService.searchPlaceByID(location_ID);
+    let { place_id, name, formatted_address, geometry, photos, opening_hours } = result;
+    let { lat, lng } = geometry.location;
+    return { place_id, name, formatted_address, geometry, lat, lng, photos, opening_hours };
+  }
 }
 
-async function restaurantsearchfromgoogleByID(location_ID) {
-  let result = await googleMapService.searchPlaceByID(location_ID);
-  let { place_id, name, formatted_address, geometry, photos, opening_hours } = result;
-  let { lat, lng } = geometry.location;
-  return { place_id, name, formatted_address, geometry, lat, lng, photos, opening_hours };
-}
 module.exports = mysqlRestaurantsTableService;
