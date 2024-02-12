@@ -14,7 +14,7 @@ router.get("/:id", async (req, res) => {
     let { user_ID } = json;
     return user_ID;
   });
-  console.log(post_id);
+  console.log(friends_ids);
   let reactions = await reactionsCollectionService.getPostReactions(post_id, user_id, friends_ids);
   res.status(200);
   res.send(reactions);
@@ -24,8 +24,6 @@ router.get("/:id", async (req, res) => {
 router.post("/:id", async (req, res) => {
   let post_id = req.params.id;
   let { user_id, reaction, liked } = req.body;
-  // let reactionArray =  ["love", ]
-  //if reaction
   try {
     await reactionsCollectionService.updateReaction(post_id, user_id, reaction, liked);
     res.status(200);

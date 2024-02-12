@@ -117,9 +117,6 @@ class Neo4j_FriendShipsService {
         RETURN friends
       `;
       let results = await this.session.run(query, { user_id });
-      if (results.records.length <= 0) {
-        throw new Error("沒有朋友");
-      }
       return results;
     } catch (error) {
       throw error;
