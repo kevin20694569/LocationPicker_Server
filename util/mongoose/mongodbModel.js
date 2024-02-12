@@ -47,13 +47,13 @@ let randomPostProjectOutput = {
 };
 
 let reactionProject = {
+  _id: 0,
   post_id: 0,
   user_id: 1,
   liked: 1,
   reaction: 1,
   updated_at: 1,
   isFriend: 1,
-  _id: 0,
 };
 
 const mediaSchema = new mongoose.Schema({

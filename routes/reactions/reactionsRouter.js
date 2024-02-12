@@ -24,6 +24,8 @@ router.get("/:id", async (req, res) => {
 router.post("/:id", async (req, res) => {
   let post_id = req.params.id;
   let { user_id, reaction, liked } = req.body;
+  // let reactionArray =  ["love", ]
+  //if reaction
   try {
     await reactionsCollectionService.updateReaction(post_id, user_id, reaction, liked);
     res.status(200);

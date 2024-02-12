@@ -44,6 +44,50 @@ class Mongodb_ReactionsCollectionService {
     return results;
   }
 
+  async getPostsPublicReactions(post_ids, selfUser_id, friend_ids) {
+    post_ids = post_ids.map((id) => {
+      return id.toHexString();
+    });
+    console.log(post_ids, selfUser_id, friend_ids);
+    let results = await this.reaction.aggregate([
+      {
+        $match: { post_id: { $in: post_ids }, user_id: { $ne: Number(selfUser_id) } },
+      },
+      {
+        $addFields: {
+          isFriend: { $in: ["$user_id", friend_ids] },
+        },
+      },
+      {
+        $group: {
+          _id: "$post_id",
+          reactions: { $push: "$$ROOT" }, // 将每个 post_id 的所有 reaction 放入一个数组中
+        },
+      },
+      {
+        $sort: { isFriend: 1, updated_at: -1 }, // 根据 isFriend 字段进行排序，朋友的排在最前面
+      },
+      {
+        $project: {
+          _id: 0,
+          post_id: "$_id",
+          reactions: {
+            $slice: ["$reactions", 3], // 保留每个 reactions 数组的前三个元素
+          },
+        },
+      },
+    ]);
+    //最多九次
+    console.log(results);
+    results.forEach((result) => {
+      result["reactions"].forEach((reaction) => {
+        reaction["reaction"] = this.translateReactionToString(reaction["reaction"]);
+      });
+    });
+
+    return results;
+  }
+
   async getSelfReaction(post_id, user_id) {
     let reaction = await this.reaction.findOne({ post_id: post_id, user_id: user_id });
 
@@ -51,15 +95,11 @@ class Mongodb_ReactionsCollectionService {
   }
 
   async getManyPostsSelfReaction(post_ids, request_user_id) {
-    let reactions = await this.reaction.find(
-      {
-        post_id: { $in: post_ids },
-        user_id: request_user_id,
-      },
-      this.reactionProject
-    );
-
-    console.log(reactions);
+    request_user_id = Number(request_user_id);
+    let reactions = await this.reaction.find({
+      post_id: { $in: post_ids },
+      user_id: request_user_id,
+    });
 
     return reactions;
   }

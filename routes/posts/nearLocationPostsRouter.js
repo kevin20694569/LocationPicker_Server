@@ -27,13 +27,19 @@ router.get("/", async (req, res) => {
     });
     let [restaurants, fileds] = await restaurantTableService.getRestaurantsDetail(restaurant_ids);
     let users = await userTableService.getUserByIDs(users_ids);
-    let reactions = await reactionsCollectionService.getManyPostsSelfReaction(post_ids, user_id);
-    let json = common_utils.mergeJsonProperties(posts, users, restaurants, reactions);
+    let friends = await FriendShipsService.searchFriendsByUserID(user_id);
+    let friends_id = FriendShipsService.transFormToJSONNeo4jResults(friends, "friends");
+    friends_id = friends_id.map((friend) => {
+      return friend.user_ID;
+    });
+    let selfreactions = await reactionsCollectionService.getManyPostsSelfReaction(post_ids, user_id);
+    let publicReactions = await reactionsCollectionService.getPostsPublicReactions(post_ids, user_id, friends_id);
+    let json = common_utils.mergeJsonProperties(posts, users, restaurants, selfreactions, publicReactions);
     res.json(json);
     res.status(200);
     res.end();
   } catch (error) {
-    console.log(error.message);
+    console.log(error);
     res.status(404);
     res.send(error.message);
     res.end();
@@ -47,14 +53,16 @@ router.get("/friends/:id", async (req, res) => {
     let userResults = await FriendShipsService.searchFriendsByUserID(user_id);
     let friends = FriendShipsService.transFormToJSONNeo4jResults(userResults, "friends");
     let friend_ID_Array = friends.map((friend) => {
-      return friend.user_ID;
+      return Number(friend.user_ID);
     });
     let posts = await postsCollectionService.getNearLocationPostsFromFriendsByUserID(friend_ID_Array, distance, latitude, longitude);
     if (posts.length < 1) {
       res.send("沒有更多posts");
       return;
     }
+    let post_ids = [];
     let restaurant_Ids = posts.map((post) => {
+      post_ids.push(post.post_id);
       return post.restaurant_id;
     });
     let [restaurants, fileds] = await restaurantTableService.getRestaurantsDetail(restaurant_Ids);
@@ -62,7 +70,10 @@ router.get("/friends/:id", async (req, res) => {
       friend_ID_Array[index] = post.user_id;
     }
     let users = await userTableService.getUserByIDs(friend_ID_Array);
-    let json = common_utils.mergeJsonProperties(posts, users, restaurants);
+    let selfreactions = await reactionsCollectionService.getManyPostsSelfReaction(post_ids, user_id);
+    let publicReactions = await reactionsCollectionService.getPostsPublicReactions(post_ids, user_id, friend_ID_Array);
+    console.log(publicReactions);
+    let json = common_utils.mergeJsonProperties(posts, users, restaurants, selfreactions, publicReactions);
     res.json(json);
     res.status(200);
     res.end();
