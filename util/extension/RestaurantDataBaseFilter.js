@@ -1,11 +1,13 @@
 const mongoose = require("mongoose");
-const restaurantTableService = require("./util/mysql/restaurantsTabel");
-const googleMapAPIService = require("./util/googlemap/googleMapAPIService");
-const Mongodb_Business_TimesCollectionService = require("./util/mongoose/business_timesCollection");
+const restaurantTableService = require("../mysql/RestaurantsTable");
+const googleMapAPIService = require("../googlemap/googleMapAPIService");
+const Mongodb_Business_TimesCollectionService = require("../mongoose/business_timesCollection");
 const restaurantTable = new restaurantTableService();
 const googleMapService = new googleMapAPIService();
-const { business_times } = require("./util/mongoose/mongodbModel");
+const { business_times } = require("../mongoose/mongodbModel");
 let Business_TimesCollectionService = new Mongodb_Business_TimesCollectionService.Mongodb_Business_TimesCollectionService();
+const socketioClass = require("../socket.io/main");
+const io = new socketioClass().io;
 
 //正規化sql Restaurants 和 mongod business_time
 async function standardPlace() {
@@ -16,8 +18,6 @@ async function standardPlace() {
     });
     let result = await Business_TimesCollectionService.getPlaceBusinessTimes(place_ids[2]);
     let { opening_hours } = result;
-    console.log(opening_hours);
-    return;
 
     let newInit = 0;
     for (i = 0; i < place_ids.length; i++) {
@@ -37,4 +37,4 @@ async function standardPlace() {
   }
 }
 
-standardPlace();
+//standardPlace();

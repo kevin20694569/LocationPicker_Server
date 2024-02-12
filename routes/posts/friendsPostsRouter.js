@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const mysqlRestaurantsTableService = require("../../util/mysql/restaurantsTabel.js");
+const mysqlRestaurantsTableService = require("../../util/mysql/RestaurantsTable.js");
 const restaurantTableService = new mysqlRestaurantsTableService();
 const Mongodb_postsCollectionService = require("../../util/mongoose/postsCollection.js");
 const mysqlUserTableService = require("../../util/mysql/usersTable.js");

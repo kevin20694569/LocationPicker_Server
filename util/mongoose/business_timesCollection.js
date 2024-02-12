@@ -118,7 +118,6 @@ class Mongodb_Business_TimesCollectionService {
         path: "opening_hours.mon opening_hours.tues opening_hours.wed opening_hours.thur opening_hours.fri opening_hours.sat opening_hours.sun",
         select: "-__v -_id",
       });
-      let open = this.isOpenNow(result.opening_hours);
       return result;
     } catch (error) {
       throw error;

@@ -2,31 +2,33 @@ var express = require("express");
 var router = express.Router();
 const Mongodb_postsCollectionService = require("../../util/mongoose/postsCollection.js");
 const postsCollectionService = new Mongodb_postsCollectionService();
-const mysqlRestaurantsTableService = require("../../util/mysql/restaurantsTabel.js");
+const mysqlRestaurantsTableService = require("../../util/mysql/RestaurantsTable.js");
 const restaurantTableService = new mysqlRestaurantsTableService();
 const mysqlUserTableService = require("../../util/mysql/usersTable.js");
 const userTableService = new mysqlUserTableService();
 const friendsDBNeo4j = require("../../util/neo4j/friendsDBNeo4j.js");
-const { logging } = require("neo4j-driver");
+const Mongodb_reactionsCollectionService = require("../../util/mongoose/reactionsCollection.js");
+const reactionsCollectionService = new Mongodb_reactionsCollectionService();
 const FriendShipsService = new friendsDBNeo4j.Neo4j_FriendShipsService();
 
-const common_functionObject = new require("../../util/extension/common_functionObject.js");
+const common_functionObject = new require("../../util/extension/common_functionObject");
 const common_utils = new common_functionObject();
 
 router.get("/", async (req, res) => {
-  let { latitude, longitude, distance, lastrestaurantid } = req.query;
+  let { latitude, longitude, distance, lastrestaurantid, user_id } = req.query;
   try {
     let posts = await postsCollectionService.getRandomPublicPostsFromDistance(longitude, latitude, distance);
-    let restaurant_Ids = posts.map((post) => {
+    let post_ids = [];
+    let users_ids = [];
+    let restaurant_ids = posts.map((post) => {
+      post_ids.push(post.post_id);
+      users_ids.push(post.user_id);
       return post.restaurant_id;
     });
-    let [restaurants, fileds] = await restaurantTableService.getRestaurantsDetail(restaurant_Ids);
-
-    let users_IDs = posts.map((post) => {
-      return post.user_id;
-    });
-    let users = await userTableService.getUserByIDs(users_IDs);
-    let json = common_utils.mergeJsonProperties(posts, users, restaurants);
+    let [restaurants, fileds] = await restaurantTableService.getRestaurantsDetail(restaurant_ids);
+    let users = await userTableService.getUserByIDs(users_ids);
+    let reactions = await reactionsCollectionService.getManyPostsSelfReaction(post_ids, user_id);
+    let json = common_utils.mergeJsonProperties(posts, users, restaurants, reactions);
     res.json(json);
     res.status(200);
     res.end();

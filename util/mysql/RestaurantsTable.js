@@ -5,6 +5,7 @@ const googleMapService = new googleMapAPIService();
 const constant = require("../extension/constant");
 const { ServerIP } = constant;
 const business_timesCollection = require("../mongoose/business_timesCollection");
+const Mongodb_postsCollectionService = require("../mongoose/postsCollection");
 const business_timeService = new business_timesCollection.Mongodb_Business_TimesCollectionService();
 
 class mysqlRestaurantsTableService extends MySQLDataBase {
@@ -20,12 +21,12 @@ class mysqlRestaurantsTableService extends MySQLDataBase {
       let query = `select * from restaurants where restaurant_id = ?;`;
       let params = [restaurant_ID];
       let [results, fileds] = await this.connection.query(query, params);
-      if (results.length > 0) {
-        return results[0];
-      } else {
+      let restaurantDetail;
+      if (results.length < 1) {
         let { place_id, name, formatted_address, geometry, lat, lng, photos, opening_hours } = await this.restaurantsearchfromgoogleByID(
           restaurant_ID
         );
+
         if (place_id == undefined || place_id == null) {
           throw new Error("找不到地點");
         }
@@ -37,22 +38,40 @@ class mysqlRestaurantsTableService extends MySQLDataBase {
         let [results, fileds] = await this.createnewrestaurant(place_id, name, formatted_address, lat, lng, firstGrade);
         if (results.serverStatus == 2) {
           await this.business_timeService.insertNewBusinessTime(place_id, opening_hours);
-          let result = {
+          restaurantDetail = {
             restaurant_id: place_id,
             restaurant_latitude: lat,
             restaurant_longitude: lng,
           };
-          return result;
         } else {
           await this.deleteRestaurant(place_id);
           throw new Error("新建餐廳失敗");
         }
+      } else {
+        restaurantDetail = results[0];
       }
+      let business_time = await this.business_timeService.getPlaceBusinessTimes(restaurant_ID);
+      let json = {
+        ...restaurantDetail,
+        ...business_time["_doc"],
+      };
+      return json;
     } catch (error) {
       throw error;
     } finally {
       await this.release();
     }
+  }
+
+  async updateRestaurantAverage_GradeWithInputGrade(restaurant_id, input_grade) {
+    await this.getConnection();
+    let query = `select average_grade from restaurants where restaurant_id = ?;`;
+    let params = [restaurant_id];
+    let [results, fileds] = await this.connection.query(query, params);
+    let { lastaverage_grade: average_grade } = results[0];
+    // this.Mongodb_postsCollectionService;
+    // lastaverage_grade;
+    let updateQuery = `update restaurants set average_grade = ? where restaurant_id = ?`;
   }
 
   async getrestaurant(restaurant_id, lat, lng) {

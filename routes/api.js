@@ -15,10 +15,7 @@ router.get("/index", async (req, res) => {
 });
 
 router.use("/media", express.static("./public/media/postmedia"));
-router.use(
-  "/restaurantimage",
-  express.static("./public/media/restaurantimage")
-);
+router.use("/restaurantimage", express.static("./public/media/restaurantimage"));
 router.use("/userimage", express.static("./public/media/userimage"));
 
 router.use("/posts", postsAPI);

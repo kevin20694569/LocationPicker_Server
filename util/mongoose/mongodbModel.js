@@ -46,6 +46,16 @@ let randomPostProjectOutput = {
   reactions: "$reactions",
 };
 
+let reactionProject = {
+  post_id: 0,
+  user_id: 1,
+  liked: 1,
+  reaction: 1,
+  updated_at: 1,
+  isFriend: 1,
+  _id: 0,
+};
+
 const mediaSchema = new mongoose.Schema({
   media_id: {
     type: String,
@@ -164,7 +174,7 @@ const reactionsSchema = new mongoose.Schema({
     require: true,
   },
   reaction: {
-    type: String,
+    type: Number,
     default: null,
   },
   liked: {
@@ -218,7 +228,6 @@ var user = locationpickermongoDB.model("users", userSchema);
 var chatroom = locationpickermongoDB.model("chatRooms", chatroomSchema);
 var reaction = locationpickermongoDB.model("reactions", reactionsSchema);
 var business_day_hours = locationpickermongoDB.model("business_day_hours", business_day_hoursSchema);
-//var business_day = locationpickermongoDB.model("business_day", business_daySchema);
 var business_times = locationpickermongoDB.model("business_times", business_timeSchema);
 
 module.exports = {
@@ -228,7 +237,7 @@ module.exports = {
   chatroom,
   reaction,
   business_day_hours,
-
+  reactionProject,
   business_times,
   locationpickermongoDB,
   projectOutput,

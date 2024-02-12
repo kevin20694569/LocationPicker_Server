@@ -14,6 +14,7 @@ router.get("/:id", async (req, res) => {
     let { user_ID } = json;
     return user_ID;
   });
+  console.log(post_id);
   let reactions = await reactionsCollectionService.getPostReactions(post_id, user_id, friends_ids);
   res.status(200);
   res.send(reactions);

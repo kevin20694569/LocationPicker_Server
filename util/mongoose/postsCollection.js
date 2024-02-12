@@ -1,9 +1,6 @@
 const mongoose = require("mongoose");
 
 const { Post, projectOutput, randomPostProjectOutput, locationpickermongoDB } = require("./mongodbModel");
-const { ResultSummary } = require("neo4j-driver");
-const { restart } = require("nodemon");
-const { diskStorage } = require("multer");
 
 class Mongodb_postsCollectionService {
   constructor() {
@@ -24,8 +21,8 @@ class Mongodb_postsCollectionService {
         restaurant_id: restaurant_id,
         grade: grade,
       });
-
       await postmodel.save();
+
       return postmodel;
     } catch (error) {
       throw new Error("新建貼文失敗");

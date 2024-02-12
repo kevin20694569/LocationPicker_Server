@@ -21,6 +21,7 @@
     "mysql2": "^3.6.1",
     "neo4j-driver": "^5.14.0",
     "nodemon": "^3.0.1",
+    "progress-stream": "^2.0.0",
     "redis": "^4.6.10",
     "short-uuid": "^4.2.2",
     "socket.io": "^4.7.2",
